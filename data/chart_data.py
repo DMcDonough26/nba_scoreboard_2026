@@ -1,21 +1,15 @@
 
 # load packages
 import streamlit as st
-from datetime import datetime
 import pandas as pd
-from nba_api.live.nba.endpoints import boxscore, odds, playbyplay, scoreboard
-# initially built with live endpoint, but new stats endpoint has broadcaster, could refactor to just one endpoint
-from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder
-from ui.web_page import *
-from data.scoreboard_data import *
-from data.chart_data import *
-from util.helper import *
+from nba_api.stats.endpoints import leaguedashteamstats
+from util.helper import lower_all
 
 @st.cache_data()
 def get_team_adv():
     adv_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Advanced').get_data_frames()[0]
     adv_df.columns = lower_all(adv_df)
-    return
+    return adv_df
 
 @st.cache_data()
 def get_team_four():

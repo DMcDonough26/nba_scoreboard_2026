@@ -2,14 +2,8 @@
 
 # load packages
 import streamlit as st
-from datetime import datetime
-import pandas as pd
-from nba_api.live.nba.endpoints import boxscore, odds, playbyplay, scoreboard
-# initially built with live endpoint, but new stats endpoint has broadcaster, could refactor to just one endpoint
-from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder
-from data.scoreboard_data import *
-from data.chart_data import *
-from util.helper import *
+from data.scoreboard_data import get_scoreboard, get_injuries
+from util.helper import get_today
 
 
 
@@ -97,10 +91,10 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df):
             hide_index=True,
             row_height=60)
 
-        # option1 = st.selectbox(
-    #     "Select a game",
-    #     scoreboard_raw_df['game_name'],
-    # )
+    option1 = st.selectbox(
+        "Select a game",
+        scoreboard_raw_df['game_name'],
+    )
 
     # # maybe make this a radial button
 

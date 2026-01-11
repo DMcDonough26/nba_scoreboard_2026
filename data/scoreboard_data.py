@@ -1,14 +1,11 @@
 
 # load packages
 import streamlit as st
-from datetime import datetime
 import pandas as pd
-from nba_api.live.nba.endpoints import boxscore, odds, playbyplay, scoreboard
+from nba_api.live.nba.endpoints import scoreboard, odds
 # initially built with live endpoint, but new stats endpoint has broadcaster, could refactor to just one endpoint
 from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder
-from ui.web_page import *
-from util.helper import *
-from data.chart_data import *
+from util.helper import get_team_abbreviations, format_time, lower_all
 
 
 # pull scoreboard from API
@@ -126,6 +123,7 @@ def get_rest():
 # injuries
 @st.cache_data()
 def get_injuries():
+    team_abbreviations = get_team_abbreviations()
     inury_url = "https://www.basketball-reference.com/friv/injuries.fcgi"
     injury_df = pd.read_html(inury_url)[0]
     injury_df['design'] = injury_df['Description'].apply(lambda x: x.split(' (')[0])
