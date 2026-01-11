@@ -7,7 +7,14 @@ from nba_api.live.nba.endpoints import boxscore, odds, playbyplay, scoreboard
 # initially built with live endpoint, but new stats endpoint has broadcaster, could refactor to just one endpoint
 from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder
 from ui.web_page import *
-from data.get_data import *
+from data.scoreboard_data import *
+from data.chart_data import *
+
+# get today
+@st.cache_data()
+def get_today():
+    today = datetime.today()
+    return today
 
 # format time (passing as apply function this way because row by row formatting differs)
 def format_time(x):

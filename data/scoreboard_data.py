@@ -8,11 +8,12 @@ from nba_api.live.nba.endpoints import boxscore, odds, playbyplay, scoreboard
 from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder
 from ui.web_page import *
 from util.helper import *
+from data.chart_data import *
 
 
 # pull scoreboard from API
+@st.cache_data()
 def get_scoreboard():
-
     # define columns to keep
     sb_keep_col = ['gameId', 'gameStatus', 'gameStatusText', 'gameEt',
        'homeTeam.teamId', 'homeTeam.teamTricode', 'homeTeam.teamName', 'homeTeam.wins', 'homeTeam.losses',
@@ -32,16 +33,19 @@ def get_scoreboard():
     return scoreboard_raw_df
 
 # rivalries from reddit survey
+@st.cache_data()
 def get_rivalries():
     rival_df = pd.read_excel('data\\Rivalries.xlsx',sheet_name=1)
     return rival_df
 
 # league pass rankings
+@st.cache_data()
 def get_lp_rankings():
     lp_df = pd.read_excel('data\\League Pass Rankings.xlsx',sheet_name=0)
     return lp_df
 
 # network
+@st.cache_data()
 def get_network(today):
     bd_df = scoreboardv3.ScoreboardV3(today.strftime('%Y-%m-%d')).get_data_frames()[5]
     nat_df = bd_df[bd_df['broadcasterType']=='nationalTv'].groupby('gameId')['broadcastDisplay'].unique().reset_index()
@@ -50,6 +54,7 @@ def get_network(today):
 
 
 # logo dictionary
+@st.cache_data()
 def get_logos():
     # https://www.sportslogos.net/teams/list_by_league/6/National-Basketball-Association-Logos/NBA-Logos/
 
@@ -89,11 +94,13 @@ def get_logos():
 
 
 # spread
+@st.cache_data()
 def get_spreads():
     odds_df = pd.json_normalize(odds.Odds().get_dict()['games'])
     return odds_df
 
 # note: if this is just binary, it could probably be rewritten as a one-line lambda function
+@st.cache_data()
 def days_rest(x):
     # if x == 0:
         # return 'B2B'
@@ -103,6 +110,7 @@ def days_rest(x):
         return str(x) + ' days'
 
 # rest
+@st.cache_data()
 def get_rest():
     games_df = leaguegamefinder.LeagueGameFinder(season_nullable='2025-26', season_type_nullable='Regular Season',league_id_nullable='00').get_data_frames()[0]
     games_df.columns = lower_all(games_df)
@@ -116,6 +124,7 @@ def get_rest():
 
 
 # injuries
+@st.cache_data()
 def get_injuries():
     inury_url = "https://www.basketball-reference.com/friv/injuries.fcgi"
     injury_df = pd.read_html(inury_url)[0]
