@@ -24,11 +24,10 @@ def main():
 
     # get ingredients
     live_df, upcoming_df, finished_df, scoreboard_raw_df = combine_data(today)
+    ff_df = get_ff_chart_data(scoreboard_raw_df)
 
     # start page
-    launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df)
-
-    # get four factors df
-    ff_df = get_ff_chart_data(scoreboard_raw_df)
+    launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df, ff_df)
+    
 
 main()

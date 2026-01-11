@@ -19,8 +19,10 @@ def get_team_four():
 
 def build_one_side_df(i,sb_df,team_stats_df,home=True, offense=True):
 
-    measure_dict = {'off_rating_rank':'Rating','efg_pct_rank':'EFG','fta_rate_rank':'FTA','tm_tov_pct_rank':'TOV','oreb_pct_rank':'ORB',
-                'def_rating_rank':'Rating','opp_efg_pct_rank':'EFG','opp_fta_rate_rank':'FTA','opp_tov_pct_rank':'TOV','opp_oreb_pct_rank':'ORB'}
+    measure_dict = {'off_rating_rank':'Offensive Rating','efg_pct_rank':'Effective Field Goal %','fta_rate_rank':'Free Throw Rate',
+                    'tm_tov_pct_rank':'Turnover %','oreb_pct_rank':'Offensive Rebounding %',
+                'def_rating_rank':'Offensive Rating','opp_efg_pct_rank':'Effective Field Goal %','opp_fta_rate_rank':'Free Throw Rate',
+                'opp_tov_pct_rank':'Turnover %','opp_oreb_pct_rank':'Offensive Rebounding %'}
 
     if home == True:
         team = sb_df['homeTeam.teamId'][i]

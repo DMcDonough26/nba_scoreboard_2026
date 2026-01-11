@@ -1,11 +1,9 @@
 
-
 # load packages
 import streamlit as st
 from data.scoreboard_data import get_scoreboard, get_injuries
 from util.helper import get_today
-
-
+from charts.charts import lollipop_chart
 
 
 # creating the page first, so that I can then start catching functions
@@ -13,7 +11,7 @@ def create_page():
     st.set_page_config(layout="wide")
 
 # set up page
-def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df):
+def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df, ff_df):
     st.title("NBA Scoreboard:"+" "+today.strftime("%m/%d/%Y"))
     st.write("Scores as of: ", today.strftime('%#I:%M:%p'))
     if st.button("Refresh"):
@@ -91,24 +89,35 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df):
             hide_index=True,
             row_height=60)
 
-    option1 = st.selectbox(
+    # consider making this a select column instead in the dataframe?
+    quesiton1 = st.selectbox(
         "Select a game",
         scoreboard_raw_df['game_name'],
+        key = 'selected_game'
     )
 
-    # # maybe make this a radial button
+    question2 = st.radio(
+        "Choose a side of the ball",
+        scoreboard_raw_df[scoreboard_raw_df['game_name']==st.session_state.selected_game][['awayTeam.teamName','homeTeam.teamName']].iloc[0].values,
+        key = 'selected_side',
+        horizontal=True
+    )
 
-    # option2 = st.selectbox(
-    #     "Choose a side of the ball",
-    #     scoreboard_raw_df['game_name'],
-    # )
+    tab4, tab5, tab6 = st.tabs(['Four Factors', 'Play Style', 'Shot Chart'])
 
-    # # maybe make this three tabs
+    team_dict = dict(zip(
+        list(scoreboard_raw_df['homeTeam.teamName'])+list(scoreboard_raw_df['awayTeam.teamName']),
+        list(scoreboard_raw_df['homeTeam.teamId'])+list(scoreboard_raw_df['awayTeam.teamId'])
+        ))
 
-    # option3 = st.selectbox(
-    #     "Choose a category",
-    #     scoreboard_raw_df['game_name'],
-    # )
+    matchup_dict = dict(zip(
+        list(scoreboard_raw_df['homeTeam.teamName'])+list(scoreboard_raw_df['awayTeam.teamName']),
+        list(scoreboard_raw_df['awayTeam.teamName'])+list(scoreboard_raw_df['homeTeam.teamName']),
+    ))
+
+    with tab4:
+        ff_chart_df = ff_df[(ff_df['game_name']==st.session_state.selected_game)&(ff_df['offense']==team_dict[st.session_state.selected_side])]
+        lollipop_chart(ff_chart_df,matchup_dict)
 
     # box 1 - four factors
     # maybe a lollipop chart
