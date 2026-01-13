@@ -3,15 +3,17 @@
 import streamlit as st
 from data.scoreboard_data import get_scoreboard, get_injuries
 from util.helper import get_today
-from charts.charts import lollipop_chart
+from charts.charts import lollipop_chart_plotly, pt_scatter_plotly
 
 
 # creating the page first, so that I can then start catching functions
 def create_page():
     st.set_page_config(layout="wide")
 
-# set up page
-def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df, ff_df):
+
+
+# set up page - saved copy of my code
+def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df, ff_df, pt_df):
     st.title("NBA Scoreboard:"+" "+today.strftime("%m/%d/%Y"))
     st.write("Scores as of: ", today.strftime('%#I:%M:%p'))
     if st.button("Refresh"):
@@ -90,44 +92,48 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df, ff_
             row_height=60)
 
     # consider making this a select column instead in the dataframe?
-    quesiton1 = st.selectbox(
+    selected_game = st.selectbox(
         "Select a game",
         scoreboard_raw_df['game_name'],
         key = 'selected_game'
     )
 
-    question2 = st.radio(
+    selected_teams = scoreboard_raw_df[scoreboard_raw_df['game_name']==st.session_state.selected_game][['awayTeam.teamName','homeTeam.teamName']].iloc[0].values
+
+    selected_side = st.radio(
         "Choose a side of the ball",
-        scoreboard_raw_df[scoreboard_raw_df['game_name']==st.session_state.selected_game][['awayTeam.teamName','homeTeam.teamName']].iloc[0].values,
+        selected_teams,
         key = 'selected_side',
         horizontal=True
     )
 
-    tab4, tab5, tab6 = st.tabs(['Four Factors', 'Play Style', 'Shot Chart'])
-
     team_dict = dict(zip(
         list(scoreboard_raw_df['homeTeam.teamName'])+list(scoreboard_raw_df['awayTeam.teamName']),
         list(scoreboard_raw_df['homeTeam.teamId'])+list(scoreboard_raw_df['awayTeam.teamId'])
-        ))
+    ))
 
     matchup_dict = dict(zip(
         list(scoreboard_raw_df['homeTeam.teamName'])+list(scoreboard_raw_df['awayTeam.teamName']),
         list(scoreboard_raw_df['awayTeam.teamName'])+list(scoreboard_raw_df['homeTeam.teamName']),
     ))
 
+    tab4, tab5, tab6, tab7 = st.tabs(['Four Factors', 'Play Types', 'Style', 'Shot Chart'])    
+
+    # with tab4:
+        # ff_chart_df = ff_df[(ff_df['game_name']==selected_game)&(ff_df['offense']==team_dict[selected_side])]
+        # lollipop_chart(ff_chart_df,matchup_dict, selected_side)
+
     with tab4:
-        ff_chart_df = ff_df[(ff_df['game_name']==st.session_state.selected_game)&(ff_df['offense']==team_dict[st.session_state.selected_side])]
-        lollipop_chart(ff_chart_df,matchup_dict)
+        ff_chart_df = ff_df[(ff_df['game_name']==selected_game)&(ff_df['offense']==team_dict[selected_side])]
+        fig = lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side)
+        st.plotly_chart(fig, use_container_width=True)
 
-    # box 1 - four factors
-    # maybe a lollipop chart
-    # maybe scale axes to min/max for league and use actual values OR use ranks
+    # with tab5:
+    #     pt_chart_df = pt_df[pt_df['team_id']==team_dict[st.session_state.selected_side]].reset_index(drop=True)
+    #     # st.dataframe(pt_chart_df)
+    #     pt_scatter(pt_chart_df)
 
-    # box 2 - shot selection
-    # 
-
-    # box 3 - style and play types
-    # maybe start with radar charts
-    # also consider a scatter plot which plots frequency/efficiency with dots for the team and league average
-
-    # st.write("What to watch:")
+    with tab5:
+        pt_chart_df = pt_df[pt_df['team_id']==team_dict[st.session_state.selected_side]].reset_index(drop=True)
+        fig = pt_scatter_plotly(pt_chart_df)
+        st.plotly_chart(fig, use_container_width=True)

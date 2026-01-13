@@ -2,7 +2,7 @@
 # load packages
 import streamlit as st
 import pandas as pd
-from nba_api.stats.endpoints import leaguedashteamstats
+from nba_api.stats.endpoints import leaguedashteamstats, synergyplaytypes
 from util.helper import lower_all
 
 @st.cache_data()
@@ -17,6 +17,7 @@ def get_team_four():
     four_df.columns = lower_all(four_df)
     return four_df
 
+@st.cache_data()
 def build_one_side_df(i,sb_df,team_stats_df,home=True, offense=True):
 
     measure_dict = {'off_rating_rank':'Offensive Rating','efg_pct_rank':'Effective Field Goal %','fta_rate_rank':'Free Throw Rate',
@@ -84,3 +85,43 @@ def get_ff_chart_data(sb_df):
             running_df = pd.concat([running_df,game_df],axis=0)
 
     return running_df
+
+@st.cache_data()
+def get_team_play_type():
+    # api response
+    iso = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Isolation',type_grouping_nullable='Offensive')
+    trans = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Transition',type_grouping_nullable='Offensive')
+    pnrb = synergyplaytypes.SynergyPlayTypes(play_type_nullable='PRBallHandler',type_grouping_nullable='Offensive')
+    pnrr = synergyplaytypes.SynergyPlayTypes(play_type_nullable='PRRollMan',type_grouping_nullable='Offensive')
+    post = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Postup',type_grouping_nullable='Offensive')
+    spot = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Spotup',type_grouping_nullable='Offensive')
+    hand = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Handoff',type_grouping_nullable='Offensive')
+    cut = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Cut',type_grouping_nullable='Offensive')
+    os = synergyplaytypes.SynergyPlayTypes(play_type_nullable='OffScreen',type_grouping_nullable='Offensive')
+    put = synergyplaytypes.SynergyPlayTypes(play_type_nullable='OffRebound',type_grouping_nullable='Offensive')
+    misc = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Misc',type_grouping_nullable='Offensive')
+
+    # dataframes
+    iso_df = iso.get_data_frames()[0]
+    trans_df = trans.get_data_frames()[0]
+    pnrb_df = pnrb.get_data_frames()[0]
+    pnrr_df = pnrr.get_data_frames()[0]
+    post_df = post.get_data_frames()[0]
+    spot_df = spot.get_data_frames()[0]
+    hand_df = hand.get_data_frames()[0]
+    cut_df = cut.get_data_frames()[0]
+    os_df = os.get_data_frames()[0]
+    put_df = put.get_data_frames()[0]
+    misc_df = misc.get_data_frames()[0]
+
+    # transform the data
+    play_type_df = pd.concat([iso_df,trans_df,pnrb_df,pnrr_df,post_df,spot_df,hand_df,cut_df,os_df,put_df,misc_df],axis=0).reset_index(drop=True)
+    play_type_df['avg_poss_pct'] = play_type_df.groupby('PLAY_TYPE')['POSS_PCT'].transform('mean')
+    play_type_df['avg_ppp'] = play_type_df.groupby('PLAY_TYPE')['PPP'].transform('mean')
+    play_type_df['rel_poss_pct'] = play_type_df['POSS_PCT'] / play_type_df['avg_poss_pct']
+    play_type_df['rel_ppp'] = play_type_df['PPP'] / play_type_df['avg_ppp']
+
+    play_type_df.columns = lower_all(play_type_df)
+
+    return play_type_df
+    

@@ -136,6 +136,7 @@ def get_injuries():
 
 
 # bring it all together
+@st.cache_data()
 def combine_data(today):
     scoreboard_raw_df = get_scoreboard()
     rival_df = get_rivalries()
