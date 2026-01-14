@@ -2,7 +2,7 @@
 # load packages
 import streamlit as st
 import pandas as pd
-from nba_api.stats.endpoints import leaguedashteamstats, synergyplaytypes
+from nba_api.stats.endpoints import leaguedashteamstats, synergyplaytypes, leaguedashptstats, leaguedashplayerstats
 from util.helper import lower_all
 
 @st.cache_data()
@@ -125,3 +125,50 @@ def get_team_play_type():
 
     return play_type_df
     
+@st.cache_data()
+def get_team_pt_dist():
+    pm_df = leaguedashptstats.LeagueDashPtStats().get_data_frames()[0]
+    pm_df.columns = lower_all(pm_df)
+    return pm_df
+
+@st.cache_data()
+def get_team_pt_pass():
+    pass_df = leaguedashptstats.LeagueDashPtStats(pt_measure_type='Passing').get_data_frames()[0]
+    pass_df.columns = lower_all(pass_df)
+    return pass_df
+
+@st.cache_data()
+def get_team_fg_con_df():
+    player_df = leaguedashplayerstats.LeagueDashPlayerStats().get_data_frames()[0]
+    player_df.columns = lower_all(player_df)
+    fg_con_df = player_df.groupby('team_id').agg({'fga':['max','sum']}).reset_index()
+    fg_con_df.columns = ['team_id','max','sum']
+    fg_con_df['fg_con_pct'] = fg_con_df['max']/fg_con_df['sum']
+    return fg_con_df
+
+@st.cache_data()
+def get_style_chart_data():
+    adv_df = get_team_adv()
+    pm_df = get_team_pt_dist()
+    pass_df = get_team_pt_pass()
+    fg_con_df = get_team_fg_con_df()
+
+    combined_df = adv_df[['team_id','pace','ast_pct']].merge(pm_df[['team_id','dist_miles']], on='team_id')
+    combined_df = combined_df.merge(pass_df[['team_id','passes_made']],on='team_id')
+    combined_df = combined_df.merge(fg_con_df[['team_id','fg_con_pct']],on='team_id')
+
+    combined_df['dist_adj'] = combined_df['dist_miles'] / combined_df['pace']
+    combined_df['passes_adj'] = combined_df['passes_made'] / combined_df['pace']
+
+    chart_df = combined_df[['team_id','pace','dist_adj','passes_adj','fg_con_pct','ast_pct']].copy()
+    chart_df.columns = ['Team','Pace','Player Movement','Ball Movement','Field Goal Concentration','Assist Percent']
+
+
+    for column in chart_df.columns[1:]:
+        mean = chart_df[column].mean()
+        std = chart_df[column].std()
+        chart_df[column] = (chart_df[column] - mean) / std
+
+    chart_df_long = chart_df.melt(id_vars=['Team'], value_vars=chart_df.columns[1:], var_name='Category', value_name='Value')
+
+    return chart_df_long

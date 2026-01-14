@@ -3,7 +3,7 @@
 import streamlit as st
 from data.scoreboard_data import get_scoreboard, get_injuries
 from util.helper import get_today
-from charts.charts import lollipop_chart_plotly, pt_scatter_plotly
+from charts.charts import lollipop_chart_plotly, pt_scatter_plotly, style_scatter_plotly
 
 
 # creating the page first, so that I can then start catching functions
@@ -13,7 +13,7 @@ def create_page():
 
 
 # set up page - saved copy of my code
-def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df, ff_df, pt_df):
+def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df, ff_df, style_df, pt_df):
     st.title("NBA Scoreboard:"+" "+today.strftime("%m/%d/%Y"))
     st.write("Scores as of: ", today.strftime('%#I:%M:%p'))
     if st.button("Refresh"):
@@ -117,23 +117,19 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df, ff_
         list(scoreboard_raw_df['awayTeam.teamName'])+list(scoreboard_raw_df['homeTeam.teamName']),
     ))
 
-    tab4, tab5, tab6, tab7 = st.tabs(['Four Factors', 'Play Types', 'Style', 'Shot Chart'])    
+    tab4, tab5, tab6, tab7 = st.tabs(['Four Factors', 'Style', 'Play Types', 'Shot Chart'])    
 
-    # with tab4:
-        # ff_chart_df = ff_df[(ff_df['game_name']==selected_game)&(ff_df['offense']==team_dict[selected_side])]
-        # lollipop_chart(ff_chart_df,matchup_dict, selected_side)
 
     with tab4:
         ff_chart_df = ff_df[(ff_df['game_name']==selected_game)&(ff_df['offense']==team_dict[selected_side])]
         fig = lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side)
         st.plotly_chart(fig, use_container_width=True)
 
-    # with tab5:
-    #     pt_chart_df = pt_df[pt_df['team_id']==team_dict[st.session_state.selected_side]].reset_index(drop=True)
-    #     # st.dataframe(pt_chart_df)
-    #     pt_scatter(pt_chart_df)
-
     with tab5:
+        fig = style_scatter_plotly(style_df, selected_side, team_dict[selected_side])
+        st.plotly_chart(fig, use_container_width=True)
+
+    with tab6:
         pt_chart_df = pt_df[pt_df['team_id']==team_dict[st.session_state.selected_side]].reset_index(drop=True)
         fig = pt_scatter_plotly(pt_chart_df)
         st.plotly_chart(fig, use_container_width=True)
