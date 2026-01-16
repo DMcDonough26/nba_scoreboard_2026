@@ -24,41 +24,82 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
         get_scoreboard.clear()
         get_injuries.clear()
         st.rerun()
-    st.write("Importance for game ratings")
+    st.write("Select weights for game rating categories:")
 
-    with st.expander("Select categories for game ratings",expanded=True):
-        # omitted contest percent, ball movement, player movement since not available for live games
-        col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
-        with col1:
-            cat1 = st.slider(label = "Point Differential", min_value = 0, max_value = 10, value = 10, step = 1, key='cat1')
-        with col2:
-            cat2 = st.slider(label = "Time Remaining", min_value = 0, max_value = 10, value = 10, step = 1, key='cat2')
-        with col3:
-            cat3 = st.slider(label = "Player Availability", min_value = 0, max_value = 10, value = 9, step = 1, key='cat3')
-        with col4:
-            cat4 = st.slider(label = "Team Quality", min_value = 0, max_value = 10, value = 9, step = 1, key='cat4')
-        with col5:
-            cat5 = st.slider(label = "Style Contrasts", min_value = 0, max_value = 10, value = 8, step = 1, key='cat5')
-        with col6:
-            cat6 = st.slider(label = "Zach Lowe Rankings", min_value = 0, max_value = 10, value = 8, step = 1, key='cat6')
-        with col7:
-            cat7 = st.slider(label = "Offensive Rating", min_value = 0, max_value = 10, value = 7, step = 1, key='cat7')
-        
-        col8, col9, col10, col11, col12, col13, col14 = st.columns(7)
-        with col8:
-            cat8 = st.slider(label = "Game Flow", min_value = 0, max_value = 10, value = 7, step = 1, key='cat8')
-        with col9:
-            cat9 = st.slider(label = "Foul Rate", min_value = 0, max_value = 10, value = 7, step = 1, key='cat9')
-        with col10:
-            cat10 = st.slider(label = "Assist Percent", min_value = 0, max_value = 10, value = 6, step = 1, key='cat10')
-        with col11:
-            cat11 = st.slider(label = "Egalitarian Offense", min_value = 0, max_value = 10, value = 6, step = 1, key='cat11')
-        with col12:
-            cat12 = st.slider(label = "Heroic Performance", min_value = 0, max_value = 10, value = 6, step = 1, key='cat12')
-        with col13:
-            cat13 = st.slider(label = "Pace", min_value = 0, max_value = 10, value = 6, step = 1, key='cat13')
-        with col14:
-            cat14 = st.slider(label = "National Broadcast", min_value = 0, max_value = 10, value = 6, step = 1, key='cat14')
+    # with st.expander("Select importance for game rating categories:",expanded=True):
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        cat1 = st.slider(
+            label="Current Game State",
+            min_value=0,
+            max_value=100,
+            value=40,
+            step=1,
+            format="%.0f%%",
+            key='cat1'
+        )
+
+        with st.expander("Game State Variables:",expanded=True):
+                var1 = st.segmented_control(label = "Point Differential", options = ['High','Medium','Low','None'], key='var1')
+                var2 = st.segmented_control(label = "Time Remaining", options = ['High','Medium','Low','None'], key='var2')
+                var3 = st.segmented_control(label = "Game Flow", options = ['High','Medium','Low','None'], key='var3')
+
+    with col2:
+        cat2 = st.slider(
+            label="Expected Quality of Play",
+            min_value=0,
+            max_value=100,
+            value=30,
+            step=1,
+            format="%.0f%%",
+            key='cat2'
+        )
+
+        with st.expander("Expected Quality Variables:",expanded=True):
+            var4 = st.segmented_control(label = "Team Strength", options = ['High','Medium','Low','None'], key='var4')
+            var5 = st.segmented_control(label = "Player Availability", options = ['High','Medium','Low','None'], key='var5')
+            var6 = st.segmented_control(label = "Rest", options = ['High','Medium','Low','None'], key='var6')
+            var7 = st.segmented_control(label = "Offensive Rating", options = ['High','Medium','Low','None'], key='var7')
+            var8 = st.segmented_control(label = "Defensive Rating", options = ['High','Medium','Low','None'], key='var8')
+
+    with col3:
+        cat3 = st.slider(
+            label="Matchup",
+            min_value=0,
+            max_value=100,
+            value=20,
+            step=1,
+            format="%.0f%%",
+            key='cat3'
+        )
+
+        with st.expander("Matchup Variables:",expanded=True):
+            val9 = st.segmented_control(label = "Rivalry", options = ['High','Medium','Low','None'], key='var9')
+            var10 = st.segmented_control(label = "Style Contrasts", options = ['High','Medium','Low','None'], key='var10')
+            var11 = st.segmented_control(label = "Star Power", options = ['High','Medium','Low','None'], key='var11')    
+            var12 = st.segmented_control(label = "National Broadcast", options = ['High','Medium','Low','None'], key='var12')
+            
+    with col4:
+        cat4 = st.slider(
+            label="Style of Play",
+            min_value=0,
+            max_value=100,
+            value=10,
+            step=1,
+            format="%.0f%%",
+            key='cat4'
+        )
+
+        with st.expander("Style Variables:",expanded=True):
+            var13 = st.segmented_control(label = "Zach Lowe Rankings", options = ['High','Medium','Low','None'], key='var13')
+            var14 = st.segmented_control(label = "Foul Rate", options = ['High','Medium','Low','None'], key='var14')
+            var15 = st.segmented_control(label = "Pace", options = ['High','Medium','Low','None'], key='var15')
+            var16 = st.segmented_control(label = "Ball Movement", options = ['High','Medium','Low','None'], key='var16')
+            var17 = st.segmented_control(label = "Player Movement", options = ['High','Medium','Low','None'], key='var17')
+            # var18 = st.segmented_control(label = "Assist Percent", options = ['High','Medium','Low','None'], key='var18')
+            var19 = st.segmented_control(label = "Egalitarian Offense", options = ['High','Medium','Low','None'], key='var19')    
+            var20 = st.segmented_control(label = "Diversity of Play Types", options = ['High','Medium','Low','None'], key='var20')
+
     
     # Create the tabs
     tab1, tab2, tab3 = st.tabs(['Live Games', 'Upcoming', 'Finished Games'])
@@ -136,14 +177,6 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
         pt_chart_df = pt_df[pt_df['team_id']==team_dict[st.session_state.selected_side]].reset_index(drop=True)
         fig = pt_scatter_plotly(pt_chart_df)
         st.plotly_chart(fig, use_container_width=True)
-
-    # with tab7:
-    #     # supply the dataframes, the matchup dict, the team dict, selected side
-    #     fig1 = shot_bar_plotly(shot_freq_df_long, opp_freq_df_long, matchup_dict, team_dict, selected_side, freq=True)
-    #     st.plotly_chart(fig1, use_container_width=True)
-
-    #     fig2 = shot_bar_plotly(shot_pct_df_long, opp_pct_df_long, matchup_dict, team_dict, selected_side, freq=False)
-    #     st.plotly_chart(fig2, use_container_width=True)
 
     with tab7:
 

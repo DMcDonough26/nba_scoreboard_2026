@@ -111,7 +111,7 @@ def pt_scatter_plotly(pt_chart_df):
 
     title_var = (
         st.session_state.selected_side
-        + " Offense: Relative Frequency and Efficiency of Play Types, Compared to Leage Average"
+        + " Offense: Relative Frequency and Efficiency of Play Types, Compared to League Average"
     )
 
     # Colors
