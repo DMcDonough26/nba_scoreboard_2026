@@ -277,3 +277,75 @@ def style_scatter_plotly(style_df, selected_side, selected_id):
     )
 
     return fig
+
+def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq=True):
+
+    # establish teams
+    offense_name = selected_side
+    defense_name = matchup_dict[selected_side]
+    offense_id = team_dict[selected_side]
+    defense_id = team_dict[selected_side]
+
+    chart_title = (
+        "Shot Distribution by Location" if freq else "Field Goal Percentage by Location"
+    )
+
+    # create chart dataframes
+    off_df_team = off_df[off_df['team_id'] == offense_id]
+    def_df_team = def_df[def_df['team_id'] == defense_id]
+    df = off_df_team.merge(def_df_team[['Measure', 'Defense']], on='Measure')
+
+    fig = go.Figure()
+
+    # --- Offense bar ---
+    fig.add_trace(go.Bar(
+        x=df["Measure"],
+        y=df["Offense"],
+        name=offense_name + " Offense",
+        marker_color="#FF8C00",
+        text=[f"{v:.0%}" for v in df["Offense"]],
+        textposition="outside",
+        textfont=dict(color="#FF8C00", size=14),
+        width=0.35   # <-- narrower bar
+    ))
+
+    # --- Defense bar ---
+    fig.add_trace(go.Bar(
+        x=df["Measure"],
+        y=df["Defense"],
+        name=defense_name + " Defense",
+        marker_color="#6e6e6e",
+        text=[f"{v:.0%}" for v in df["Defense"]],
+        textposition="outside",
+        textfont=dict(color="#6e6e6e", size=14),
+        width=0.35  # <-- narrower bar
+    ))
+
+    # Layout
+    fig.update_layout(
+        barmode="group",
+        bargap=0.25,        # space between categories
+        bargroupgap=0.1,   # space between orange & gray
+        title=chart_title,
+        font=dict(size=16),
+        height=480,
+        margin=dict(l=60, r=40, t=60, b=60),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.25,      # pushes legend below chart
+            xanchor="center",
+            x=0.5,
+            font=dict(size=14)
+        )
+
+    )
+
+    # Remove y-axis labels + gridlines
+    fig.update_yaxes(
+        showticklabels=False,
+        showgrid=False,
+        zeroline=False
+    )
+
+    return fig

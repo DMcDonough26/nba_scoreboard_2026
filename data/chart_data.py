@@ -2,7 +2,7 @@
 # load packages
 import streamlit as st
 import pandas as pd
-from nba_api.stats.endpoints import leaguedashteamstats, synergyplaytypes, leaguedashptstats, leaguedashplayerstats
+from nba_api.stats.endpoints import leaguedashteamstats, synergyplaytypes, leaguedashptstats, leaguedashplayerstats, leaguedashteamshotlocations
 from util.helper import lower_all
 
 @st.cache_data()
@@ -172,3 +172,66 @@ def get_style_chart_data():
     chart_df_long = chart_df.melt(id_vars=['Team'], value_vars=chart_df.columns[1:], var_name='Category', value_name='Value')
 
     return chart_df_long
+
+
+@st.cache_data()
+def get_shot_data():
+    # get data
+    shot_df = leaguedashteamshotlocations.LeagueDashTeamShotLocations().get_data_frames()[0]
+    opp_shot_df = leaguedashteamshotlocations.LeagueDashTeamShotLocations(measure_type_simple='Opponent').get_data_frames()[0]
+
+    # flatten column index
+    shot_df.columns = ['_'.join(col) for col in shot_df.columns.values]
+    opp_shot_df.columns = ['_'.join(col) for col in opp_shot_df.columns.values]
+
+    # create dataframes
+    shot_freq_df = shot_df[['_TEAM_ID','Restricted Area_FGA','In The Paint (Non-RA)_FGA','Mid-Range_FGA','Above the Break 3_FGA','Corner 3_FGA']]
+    shot_pct_df = shot_df[['_TEAM_ID', 'Restricted Area_FG_PCT','In The Paint (Non-RA)_FG_PCT','Mid-Range_FG_PCT','Above the Break 3_FG_PCT','Corner 3_FG_PCT']]
+    opp_freq_df = opp_shot_df[['_TEAM_ID', 'Restricted Area_OPP_FGA','In The Paint (Non-RA)_OPP_FGA','Mid-Range_OPP_FGA','Above the Break 3_OPP_FGA','Corner 3_OPP_FGA']]
+    opp_pct_df = opp_shot_df[['_TEAM_ID','Restricted Area_OPP_FG_PCT','In The Paint (Non-RA)_OPP_FG_PCT','Mid-Range_OPP_FG_PCT','Above the Break 3_OPP_FG_PCT','Corner 3_OPP_FG_PCT']]
+
+    # rename columns
+    shot_freq_df.columns = ['team_id','rim_fga','paint_fga','mid_fga','break_fga','corner_fga']
+    shot_pct_df.columns = ['team_id','Rim','Paint','Mid Range','Above the Break 3','Corner 3']
+    opp_freq_df.columns = ['team_id','rim_fga','paint_fga','mid_fga','break_fga','corner_fga']
+    opp_pct_df.columns = ['team_id','Rim','Paint','Mid Range','Above the Break 3','Corner 3']
+
+    # add total fga
+    shot_freq_df['tot_fga'] = shot_freq_df['rim_fga'] + shot_freq_df['paint_fga'] + shot_freq_df['mid_fga'] + shot_freq_df['break_fga'] + shot_freq_df['corner_fga']
+    opp_freq_df['tot_fga'] = opp_freq_df['rim_fga'] + opp_freq_df['paint_fga'] + opp_freq_df['mid_fga'] + opp_freq_df['break_fga'] + opp_freq_df['corner_fga']
+
+    # calculate frequency percents
+    shot_freq_df['Rim'] = shot_freq_df['rim_fga']/shot_freq_df['tot_fga']
+    shot_freq_df['Paint'] = shot_freq_df['paint_fga']/shot_freq_df['tot_fga']
+    shot_freq_df['Mid Range'] = shot_freq_df['mid_fga']/shot_freq_df['tot_fga']
+    shot_freq_df['Above the Break 3'] = shot_freq_df['break_fga']/shot_freq_df['tot_fga']
+    shot_freq_df['Corner 3'] = shot_freq_df['corner_fga']/shot_freq_df['tot_fga']
+
+    opp_freq_df['Rim'] = opp_freq_df['rim_fga']/opp_freq_df['tot_fga']
+    opp_freq_df['Paint'] = opp_freq_df['paint_fga']/opp_freq_df['tot_fga']
+    opp_freq_df['Mid Range'] = opp_freq_df['mid_fga']/opp_freq_df['tot_fga']
+    opp_freq_df['Above the Break 3'] = opp_freq_df['break_fga']/opp_freq_df['tot_fga']
+    opp_freq_df['Corner 3'] = opp_freq_df['corner_fga']/opp_freq_df['tot_fga']
+
+    # melt the dataframes
+    shot_freq_df_long = shot_freq_df.melt(
+        id_vars=['team_id'],
+        value_vars=['Rim','Paint','Mid Range','Above the Break 3','Corner 3'],
+        var_name='Measure', value_name='Offense')
+
+    shot_pct_df_long = shot_pct_df.melt(
+        id_vars=['team_id'],
+        value_vars=['Rim','Paint','Mid Range','Above the Break 3','Corner 3'],
+        var_name='Measure', value_name='Offense')
+
+    opp_freq_df_long = opp_freq_df.melt(
+        id_vars=['team_id'],
+        value_vars=['Rim','Paint','Mid Range','Above the Break 3','Corner 3'],
+        var_name='Measure', value_name='Defense')
+
+    opp_pct_df_long = opp_pct_df.melt(
+        id_vars=['team_id'],
+        value_vars=['Rim','Paint','Mid Range','Above the Break 3','Corner 3'],
+        var_name='Measure', value_name='Defense')
+
+    return shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long
