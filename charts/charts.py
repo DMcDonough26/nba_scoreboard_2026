@@ -305,7 +305,7 @@ def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq
         marker_color="#FF8C00",
         text=[f"{v:.0%}" for v in df["Offense"]],
         textposition="outside",
-        textfont=dict(color="#FF8C00", size=14),
+        textfont=dict(color="#FF8C00", size=18),
         width=0.35   # <-- narrower bar
     ))
 
@@ -317,7 +317,7 @@ def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq
         marker_color="#6e6e6e",
         text=[f"{v:.0%}" for v in df["Defense"]],
         textposition="outside",
-        textfont=dict(color="#6e6e6e", size=14),
+        textfont=dict(color="#6e6e6e", size=18),
         width=0.35  # <-- narrower bar
     ))
 
@@ -326,9 +326,9 @@ def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq
         barmode="group",
         bargap=0.25,        # space between categories
         bargroupgap=0.1,   # space between orange & gray
-        title=chart_title,
+        title=dict(text=chart_title,font=dict(size=22)),
         font=dict(size=16),
-        height=480,
+        height=580,
         margin=dict(l=60, r=40, t=60, b=60),
         legend=dict(
             orientation="h",
@@ -336,7 +336,7 @@ def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq
             y=-0.25,      # pushes legend below chart
             xanchor="center",
             x=0.5,
-            font=dict(size=14)
+            font=dict(size=18)
         )
 
     )
@@ -347,5 +347,7 @@ def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq
         showgrid=False,
         zeroline=False
     )
+
+    fig.update_xaxes(tickfont=dict(size=18))
 
     return fig

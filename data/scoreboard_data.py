@@ -2,10 +2,12 @@
 # load packages
 import streamlit as st
 import pandas as pd
-from nba_api.live.nba.endpoints import scoreboard, odds
+from nba_api.live.nba.endpoints import scoreboard, odds, boxscore
 # initially built with live endpoint, but new stats endpoint has broadcaster, could refactor to just one endpoint
 from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder
 from util.helper import get_team_abbreviations, format_time, lower_all
+from ratings.ratings import get_ratings
+import time
 
 
 # pull scoreboard from API
@@ -133,6 +135,30 @@ def get_injuries():
     agg_df['injuries'] = agg_df['Player'].apply(lambda x: ', '.join(x))
     return agg_df
 
+# get live box score
+@st.cache_data()
+def get_live_box_score(x):
+    game_id_list = []
+    biggest_lead_list = []
+    lead_changes_list = []
+    times_tied_list = []
+
+    for i, game_id in enumerate(x['gameId']):
+        if x['gameStatus'][i] == 1:
+            continue
+        else:
+            game_id_list.append(game_id)
+            game_box = boxscore_obj = boxscore.BoxScore(game_id)
+            biggest_lead_list.append(max(game_box.get_dict()['game']['homeTeam']['statistics']['biggestLead'],
+                                            game_box.get_dict()['game']['awayTeam']['statistics']['biggestLead']))
+            lead_changes_list.append(game_box.get_dict()['game']['homeTeam']['statistics']['leadChanges'])
+            times_tied_list.append(game_box.get_dict()['game']['homeTeam']['statistics']['timesTied'])
+            time.sleep(1)
+
+    live_box_df = pd.DataFrame({'gameId':game_id_list,'biggest_lead':biggest_lead_list,'lead_changes':lead_changes_list,'times_tied':times_tied_list})
+
+    return live_box_df
+
 
 
 # bring it all together
@@ -146,6 +172,7 @@ def combine_data(today):
     odds_df = get_spreads()
     latest_games = get_rest()
     agg_df = get_injuries()
+    live_box_df = get_live_box_score(scoreboard_raw_df)
 
     # merge rival
     scoreboard_raw_df['rivalry'] = scoreboard_raw_df['team_combo'].apply(lambda x: 1 if int(x) in list(rival_df['key'].values) else 0)
@@ -180,11 +207,17 @@ def combine_data(today):
     scoreboard_raw_df = scoreboard_raw_df.merge(agg_df[['teamtricode','injuries']],how='left',left_on='awayTeam.teamTricode',right_on='teamtricode',\
                                                 suffixes=('_home','_away'))
 
+    # merge live box
+
+    scoreboard_raw_df = scoreboard_raw_df.merge(live_box_df,how='left',on='gameId')
+
+    # get rating
+    scoreboard_raw_df['game_rating'] = scoreboard_raw_df.apply(get_ratings,axis=1)
+    # scoreboard_raw_df['game_rating'] = 'TBD' # to be updated with formula and user inputs
 
     # placeholder fields
     scoreboard_raw_df['win_prob'] = 'TBD' # to be updated (calculate live, pull ML from somewhere in advance)
     scoreboard_raw_df['real_time'] = 'TBD' # to be updated with model
-    scoreboard_raw_df['game_rating'] = 'TBD' # to be updated with formula and user inputs
     scoreboard_raw_df['end_time'] = 'TBD' # add real time remaining to current/tipoff time
 
     # split into sections
@@ -199,23 +232,47 @@ def combine_data(today):
 
     # create final dataframes
     live_df = live_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry','awayTeam.score','homeTeam.score',\
-                            'diff','gameStatusText','win_prob','real_time','game_rating','rest_away','rest_home','injuries_away','injuries_home',\
+                            'diff','gameStatusText','win_prob','real_time',
+                            # temporary test fields
+                            'biggest_lead','lead_changes','times_tied',
+                            #
+                            'game_rating','rest_away','rest_home','injuries_away','injuries_home',\
                             'ring_avg','rob_avg']].copy()
 
     live_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Away Score','Home Score','"The Diff"','Game Time Remaining',\
-                    'Win Probability','Est. Real Time Remaining','Game Rating','Rest Away','Rest Home','Injuries Away','Injuries Home',\
+                    'Win Probability','Est. Real Time Remaining',
+                    # temporary test fields
+                    'biggest_lead','lead_changes','times_tied',
+                    #
+                    'Game Rating','Rest Away','Rest Home','Injuries Away','Injuries Home',\
                     'Zach Lowe Rank',' Rob Perez Rank']
 
     upcoming_df = upcoming_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry','spread','win_prob',\
-                                    'end_time','game_rating','rest_away','rest_home','injuries_away','injuries_home','ring_avg','rob_avg']].copy()
+                                    'end_time',
+                                    # temporary test fields
+                                    'biggest_lead','lead_changes','times_tied',
+                                    #
+                                    'game_rating','rest_away','rest_home','injuries_away','injuries_home','ring_avg','rob_avg']].copy()
 
-    upcoming_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Spread','Win Probability','Projected End Time','Game Rating',\
+    upcoming_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Spread','Win Probability','Projected End Time',
+                            # temporary test fields
+                            'biggest_lead','lead_changes','times_tied',
+                            #
+    'Game Rating',\
                             'Rest Away','Rest Home','Injuries Away','Injuries Home','Zach Lowe Rank',' Rob Perez Rank']
 
     finished_df = finished_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry','awayTeam.score',\
-                                    'homeTeam.score','diff','game_rating','rest_away','rest_home','injuries_away','injuries_home','ring_avg','rob_avg']].copy()
+                                    'homeTeam.score','diff',
+                                    # temporary test fields
+                                    'biggest_lead','lead_changes','times_tied',
+                                    #
+                                    'game_rating','rest_away','rest_home','injuries_away','injuries_home','ring_avg','rob_avg']].copy()
 
-    finished_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Away Score','Home Score','"The Diff"','Game Rating',\
+    finished_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Away Score','Home Score','"The Diff"',
+                            # temporary test fields
+                            'biggest_lead','lead_changes','times_tied',
+                            #
+    'Game Rating',\
                             'Rest Away','Rest Home','Injuries Away','Injuries Home','Zach Lowe Rank',' Rob Perez Rank']
 
     return live_df, upcoming_df, finished_df, scoreboard_raw_df

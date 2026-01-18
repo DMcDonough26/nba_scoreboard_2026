@@ -14,16 +14,6 @@ from data.scoreboard_data import combine_data
 from data.chart_data import get_ff_chart_data, get_style_chart_data, get_team_play_type, get_shot_data
 from util.helper import get_today
 
-
-# on a non-refresh rerun:
-# create page
-# launch page
-
-# on refresh, these are also unlocked:
-# today (for timestamp)
-# scoreboard (latest scores)
-# injuries (could be late scratches on upcoming games)
-
 def main():
     # create page first, so you can cache functions
     create_page()
@@ -33,12 +23,14 @@ def main():
 
     # get ingredients
     live_df, upcoming_df, finished_df, scoreboard_raw_df = combine_data(today)
+
+    # get chart dfs
     ff_df = get_ff_chart_data(scoreboard_raw_df)
     style_df = get_style_chart_data()
     pt_df = get_team_play_type()
     shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long = get_shot_data()
 
-    # start page
+    # launch page
     launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
                 ff_df, style_df, pt_df,
                 shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long)
