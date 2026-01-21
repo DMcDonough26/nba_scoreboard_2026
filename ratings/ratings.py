@@ -68,28 +68,49 @@ def team_strength(x):
 
 # ratings
 @st.cache_data()
-def get_ratings(x):
+def get_ratings(x, var_means, var_stds):
     # weights
     # if the vars are not in the session state
     initial_weight_dict = {
         'point_diff':0.15,
         'time_remaining':0.15,
         'game_flow':0.1,
-        'team_strength':0.075
+        'team_strength':0.075,
+        'player_avail':0.075,
+        'rest':0.05,
+        'off_rating':0.05,
+        'def_rating':0.05,
+        'rivalry':0.0667,
+        'contrast':0.0667,
+        'star':0.0333
         }
 
     mean_dict = {
         'point_diff':12.7480, # from 2025 season
         'time_remaining':1440.5, # from uniform distribution of seconds
-        'game_flow':0.8711,
-        'team_strength':40.8837 # from 2025 season
+        'game_flow':0.8711, # from 2025 season
+        'team_strength':40.8837, # from ?2025 season
+        'player_avail':var_means['injured'], # from current injuries
+        'rest':1.1225, # from 2025 season
+        'off_rating':var_means['off_rating'], # from current season
+        'def_rating':var_means['def_rating'],
+        'rivalry':0.08, # from distribution of 870 matchups and 66 being rivalries
+        'contrast':0.2460, # from distribution of 870 matchups with 10 stats each
+        'star': 1.1 # from team distribution in 2026
     }
 
     std_dict = {
         'point_diff':9.6114, # from 2025 season
         'time_remaining':831.5287, # from uniform distribution of seconds
-        'game_flow':1.0868,
-        'team_strength':10.7595 # from 2025 season
+        'game_flow':1.0868, # from 2025 season
+        'team_strength':10.7595, # from 2025 season
+        'player_avail':var_stds['injured'], # from current injuries
+        'rest':0.8783, # from 2025 season
+        'off_rating':var_stds['off_rating'], # from current season
+        'def_rating':var_stds['def_rating'],
+        'rivalry':0.26, # from distribution of 870 matchups and 66 being rivalries
+        'contrast':0.4309, # from distribution of 870 matchups with 10 stats each
+        'star': 0.8449 # from team distribution in 2026
     }
 
     # point_diff_val = initial_weight_dict['point_diff'] * (abs(point_diff(x)) - mean_dict['point_diff'])/std_dict['point_diff']
@@ -98,12 +119,18 @@ def get_ratings(x):
     #     game_flow_val = initial_weight_dict['game_flow'] * (game_flow(x) - mean_dict['game_flow'])/std_dict['game_flow']
     # else:
     #     game_flow_val = 0
-    team_strength_val = initial_weight_dict['team_strength'] * (team_strength(x) - mean_dict['team_strength'])/std_dict['team_strength']
+    # team_strength_val = initial_weight_dict['team_strength'] * (team_strength(x) - mean_dict['team_strength'])/std_dict['team_strength']
+    # player_avail_val = initial_weight_dict['player_avail'] * (((x['injured_vorp_home2']+x['injured_vorp_away2'])/2 - mean_dict['player_avail'])/std_dict['player_avail'])*-1
+    # rest_val = initial_weight_dict['rest'] * (((x['rest_away']+x['rest_home'])/2) - mean_dict['rest'])/std_dict['rest']
+    # off_rating_val = initial_weight_dict['off_rating'] * ((x['off_rating_home3']+x['off_rating_away3'])/2 - mean_dict['off_rating']) /std_dict['off_rating']
+    # def_rating_val = initial_weight_dict['def_rating'] * ((x['def_rating_home3']+x['def_rating_away3'])/2 - mean_dict['def_rating']) /std_dict['def_rating']
+    # rivalry_val = initial_weight_dict['rivalry'] * (x['rivalry'] - mean_dict['rivalry'])/ std_dict['rivalry']
+    # contrast_val = initial_weight_dict['contrast'] * (x['contrast'] - mean_dict['contrast'])/std_dict['contrast']
+    star_val = initial_weight_dict['star'] * ((x['star_ind_home4'] + x['star_ind_away4'])/2 - mean_dict['star'])/std_dict['star']
 
-    # rating = point_diff_val + time_remaining_val
-    rating = team_strength_val
+    rating = star_val
 
     # apply normalization to 0-10 scale
     pass
 
-    return round(rating,1)
+    return round(rating,4)
