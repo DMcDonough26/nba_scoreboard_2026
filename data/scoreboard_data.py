@@ -4,7 +4,7 @@ import streamlit as st
 import pandas as pd
 from nba_api.live.nba.endpoints import scoreboard, odds, boxscore
 # initially built with live endpoint, but new stats endpoint has broadcaster, could refactor to just one endpoint
-from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder
+from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder, leaguedashteamstats
 from util.helper import get_team_abbreviations, format_time, lower_all, get_team_abbreviations2
 from ratings.ratings import get_ratings
 import time
@@ -235,6 +235,16 @@ def get_stars():
     # aggregate to the tri code
     return df26_non_injured.groupby('teamtricode')['star_ind'].sum().reset_index()
 
+# get fouls
+@st.cache_data()
+def get_fouls():
+    foul_df = leaguedashteamstats.LeagueDashTeamStats(per_mode_detailed='PerGame').get_data_frames()[0]
+    opp_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Opponent',per_mode_detailed='PerGame').get_data_frames()[0]
+    combined_df = foul_df[['TEAM_ID','PF']].merge(opp_df[['TEAM_ID','OPP_PF']],how='left',on='TEAM_ID')
+    combined_df['total_fouls'] = combined_df['PF'] + combined_df['OPP_PF']
+    combined_df.columns = lower_all(combined_df)
+    return combined_df
+
 # bring it all together
 @st.cache_data()
 def combine_data(today):
@@ -250,6 +260,8 @@ def combine_data(today):
     vorp_df_25 = get_vorp(2025)
     adv_df = get_team_adv()
     ff_chart_df = get_ff_chart_data(scoreboard_raw_df)
+    star_df = get_stars()
+    foul_df = get_fouls()
 
     # merge rival
     scoreboard_raw_df['rivalry'] = scoreboard_raw_df['team_combo'].apply(lambda x: 1 if int(x) in list(rival_df['key'].values) else 0)
@@ -299,12 +311,9 @@ def combine_data(today):
 
     # get off/def ratings
 
-    scoreboard_raw_df = scoreboard_raw_df.merge(adv_df[['team_id','off_rating','def_rating']],how='left',left_on='homeTeam.teamId',right_on='team_id')
-    scoreboard_raw_df = scoreboard_raw_df.merge(adv_df[['team_id','off_rating','def_rating']],how='left',left_on='awayTeam.teamId',right_on='team_id',\
+    scoreboard_raw_df = scoreboard_raw_df.merge(adv_df[['team_id','off_rating','def_rating','pace']],how='left',left_on='homeTeam.teamId',right_on='team_id')
+    scoreboard_raw_df = scoreboard_raw_df.merge(adv_df[['team_id','off_rating','def_rating','pace']],how='left',left_on='awayTeam.teamId',right_on='team_id',\
                                                 suffixes=('_home3','_away3'))
-
-    var_means = {'injured':injured_vorp_team_df['injured_vorp'].mean(), 'off_rating':adv_df['off_rating'].mean(), 'def_rating':adv_df['def_rating'].mean()}
-    var_stds = {'injured':injured_vorp_team_df['injured_vorp'].std(),'off_rating':adv_df['off_rating'].std(), 'def_rating':adv_df['def_rating'].std()}
 
     # style contrasts
 
@@ -314,11 +323,22 @@ def combine_data(today):
     scoreboard_raw_df = scoreboard_raw_df.merge(ff_chart_agg,how='left',on='game_name')
 
     # star power
-    star_df = get_stars()
     scoreboard_raw_df = scoreboard_raw_df.merge(star_df,how='left',left_on='homeTeam.teamTricode',right_on='teamtricode')
     scoreboard_raw_df = scoreboard_raw_df.merge(star_df,how='left',left_on='awayTeam.teamTricode',right_on='teamtricode',\
                                                 suffixes=('_home4','_away4'))
+
+    # get fouls
+    scoreboard_raw_df = scoreboard_raw_df.merge(foul_df[['team_id','total_fouls']],how='left',left_on='homeTeam.teamId',right_on='team_id')
+    scoreboard_raw_df = scoreboard_raw_df.merge(foul_df[['team_id','total_fouls']],how='left',left_on='awayTeam.teamId',right_on='team_id',\
+                                                suffixes=('_home5','_away5'))
     
+    var_means = {'injured':injured_vorp_team_df['injured_vorp'].mean(), 'off_rating':adv_df['off_rating'].mean(), 'def_rating':adv_df['def_rating'].mean(),
+                 'fouls':foul_df['total_fouls'].mean(), 'pace':adv_df['pace'].mean()}
+    var_stds = {'injured':injured_vorp_team_df['injured_vorp'].std(),'off_rating':adv_df['off_rating'].std(), 'def_rating':adv_df['def_rating'].std(),
+                'fouls':foul_df['total_fouls'].std(), 'pace':adv_df['pace'].std()}
+
+    print(var_means['pace'])
+    print(var_stds['pace'])
 
     # get rating
     scoreboard_raw_df['game_rating'] = scoreboard_raw_df.apply(get_ratings,axis=1, var_means=var_means,
@@ -345,7 +365,8 @@ def combine_data(today):
                             'diff','gameStatusText','win_prob','real_time',
                             # temporary test fields
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4',
+                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
+                            'pace_home3','pace_away3',
                             #
                             'game_rating','rest_away','rest_home','injuries_away','injuries_home',\
                             'ring_avg','rob_avg']].copy()
@@ -354,7 +375,8 @@ def combine_data(today):
                     'Win Probability','Est. Real Time Remaining',
                     # temporary test fields
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4',
+                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
+                            'pace_home3','pace_away3',
                     #
                     'Game Rating','Rest Away','Rest Home','Injuries Away','Injuries Home',\
                     'Zach Lowe Rank',' Rob Perez Rank']
@@ -363,14 +385,16 @@ def combine_data(today):
                                     'end_time',
                                     # temporary test fields
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4',
+                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
+                            'pace_home3','pace_away3',
                                     #
                                     'game_rating','rest_away','rest_home','injuries_away','injuries_home','ring_avg','rob_avg']].copy()
 
     upcoming_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Spread','Win Probability','Projected End Time',
                             # temporary test fields
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4',
+                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
+                            'pace_home3','pace_away3',
                             #
     'Game Rating',\
                             'Rest Away','Rest Home','Injuries Away','Injuries Home','Zach Lowe Rank',' Rob Perez Rank']
@@ -379,14 +403,16 @@ def combine_data(today):
                                     'homeTeam.score','diff',
                                     # temporary test fields
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4',
+                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
+                            'pace_home3','pace_away3',
                                     #
                                     'game_rating','rest_away','rest_home','injuries_away','injuries_home','ring_avg','rob_avg']].copy()
 
     finished_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Away Score','Home Score','"The Diff"',
                             # temporary test fields
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4',
+                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
+                            'pace_home3','pace_away3',
                             #
     'Game Rating',\
                             'Rest Away','Rest Home','Injuries Away','Injuries Home','Zach Lowe Rank',' Rob Perez Rank']
