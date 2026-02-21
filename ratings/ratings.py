@@ -3,9 +3,6 @@ import pandas as pd
 import streamlit as st
 
 
-# upcoming, live, finished
-
-
 # get point diff
 def point_diff(x):
     if x['gameStatus']==1:
@@ -39,7 +36,7 @@ def time_remaining(x):
     if x['gameStatus']==3:
         return 0
     else:
-        STOP
+        STOP # eventually replace this was better exception handling
 
 # get game flow
 def game_flow(x):

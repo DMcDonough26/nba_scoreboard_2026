@@ -1,10 +1,10 @@
 
 # load packages
 import streamlit as st
-from data.scoreboard_data import get_scoreboard, get_injuries
 from util.helper import get_today
-from charts.charts import lollipop_chart_plotly, pt_scatter_plotly, style_scatter_plotly, shot_bar_plotly
+from data.get_data import get_scoreboard, get_injuries
 from ratings.ratings import get_ratings
+from charts.charts import lollipop_chart_plotly, pt_scatter_plotly, style_scatter_plotly, shot_bar_plotly
 
 
 # creating the page first, so that I can then start catching functions
