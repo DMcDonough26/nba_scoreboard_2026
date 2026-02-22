@@ -345,6 +345,7 @@ def get_team_play_type():
     play_type_df['avg_ppp'] = play_type_df.groupby('PLAY_TYPE')['PPP'].transform('mean')
     play_type_df['rel_poss_pct'] = play_type_df['POSS_PCT'] / play_type_df['avg_poss_pct']
     play_type_df['rel_ppp'] = play_type_df['PPP'] / play_type_df['avg_ppp']
+    play_type_df['play_var'] = (play_type_df['POSS_PCT'] - play_type_df['avg_poss_pct']) ** 2
 
     play_type_df.columns = lower_all(play_type_df)
 
@@ -400,7 +401,7 @@ def get_style_chart_data():
 
     chart_df_long = chart_df.melt(id_vars=['Team'], value_vars=chart_df.columns[1:], var_name='Category', value_name='Value')
 
-    return chart_df_long
+    return chart_df, chart_df_long
 
 # shot chart data
 @st.cache_data()

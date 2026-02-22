@@ -26,7 +26,7 @@ def combine_data():
     ff_chart_df = get_ff_chart_data(scoreboard_raw_df)
     star_df = get_stars()
     foul_df = get_fouls()
-    style_df = get_style_chart_data()
+    style_df_wide, style_df = get_style_chart_data()
     pt_df = get_team_play_type()
     shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long = get_shot_data()
 
@@ -100,11 +100,26 @@ def combine_data():
     scoreboard_raw_df = scoreboard_raw_df.merge(foul_df[['team_id','total_fouls']],how='left',left_on='homeTeam.teamId',right_on='team_id')
     scoreboard_raw_df = scoreboard_raw_df.merge(foul_df[['team_id','total_fouls']],how='left',left_on='awayTeam.teamId',right_on='team_id',\
                                                 suffixes=('_home5','_away5'))
+
+    # get style components -- these are already normalized
+    scoreboard_raw_df = scoreboard_raw_df.merge(style_df_wide[['Team','Player Movement','Ball Movement','Field Goal Concentration']],how='left',left_on='homeTeam.teamId',right_on='Team')
+    scoreboard_raw_df = scoreboard_raw_df.merge(style_df_wide[['Team','Player Movement','Ball Movement','Field Goal Concentration']],how='left',left_on='awayTeam.teamId',right_on='Team',\
+                                                suffixes=('_home6','_away6'))
+
+    # play diversity
+    play_div_df = pt_df.groupby('team_id')['play_var'].sum().reset_index()
+
+    scoreboard_raw_df = scoreboard_raw_df.merge(play_div_df[['team_id','play_var']],how='left',left_on='homeTeam.teamId',right_on='team_id')
+    scoreboard_raw_df = scoreboard_raw_df.merge(play_div_df[['team_id','play_var']],how='left',left_on='awayTeam.teamId',right_on='team_id',\
+                                                suffixes=('_home7','_away7'))
     
     var_means = {'injured':injured_vorp_team_df['injured_vorp'].mean(), 'off_rating':adv_df['off_rating'].mean(), 'def_rating':adv_df['def_rating'].mean(),
-                 'fouls':foul_df['total_fouls'].mean(), 'pace':adv_df['pace'].mean()}
+                 'fouls':foul_df['total_fouls'].mean(), 'pace':adv_df['pace'].mean(), 'play_div':play_div_df['play_var'].mean()}
     var_stds = {'injured':injured_vorp_team_df['injured_vorp'].std(),'off_rating':adv_df['off_rating'].std(), 'def_rating':adv_df['def_rating'].std(),
-                'fouls':foul_df['total_fouls'].std(), 'pace':adv_df['pace'].std()}
+                'fouls':foul_df['total_fouls'].std(), 'pace':adv_df['pace'].std(), 'play_div':play_div_df['play_var'].std()}
+
+    print(var_means['play_div'])
+    print(var_stds['play_div'])
 
     # get rating
     scoreboard_raw_df['game_rating'] = scoreboard_raw_df.apply(get_ratings,axis=1, var_means=var_means,
@@ -133,6 +148,9 @@ def combine_data():
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
                             'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
                             'pace_home3','pace_away3',
+                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
+                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
+                            'play_var_home7','play_var_away7',
                             #
                             'game_rating','rest_away','rest_home','injuries_away','injuries_home',\
                             'ring_avg','rob_avg']].copy()
@@ -143,6 +161,9 @@ def combine_data():
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
                             'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
                             'pace_home3','pace_away3',
+                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
+                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
+                            'play_var_home7','play_var_away7',
                     #
                     'Game Rating','Rest Away','Rest Home','Injuries Away','Injuries Home',\
                     'Zach Lowe Rank',' Rob Perez Rank']
@@ -153,6 +174,9 @@ def combine_data():
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
                             'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
                             'pace_home3','pace_away3',
+                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
+                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
+                            'play_var_home7','play_var_away7',
                                     #
                                     'game_rating','rest_away','rest_home','injuries_away','injuries_home','ring_avg','rob_avg']].copy()
 
@@ -161,6 +185,9 @@ def combine_data():
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
                             'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
                             'pace_home3','pace_away3',
+                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
+                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
+                            'play_var_home7','play_var_away7',
                             #
     'Game Rating',\
                             'Rest Away','Rest Home','Injuries Away','Injuries Home','Zach Lowe Rank',' Rob Perez Rank']
@@ -171,6 +198,9 @@ def combine_data():
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
                             'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
                             'pace_home3','pace_away3',
+                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
+                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
+                            'play_var_home7','play_var_away7',
                                     #
                                     'game_rating','rest_away','rest_home','injuries_away','injuries_home','ring_avg','rob_avg']].copy()
 
@@ -179,6 +209,9 @@ def combine_data():
                             'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
                             'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
                             'pace_home3','pace_away3',
+                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
+                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
+                            'play_var_home7','play_var_away7',
                             #
     'Game Rating',\
                             'Rest Away','Rest Home','Injuries Away','Injuries Home','Zach Lowe Rank',' Rob Perez Rank']

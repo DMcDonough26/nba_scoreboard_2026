@@ -10,14 +10,7 @@ from charts.charts import lollipop_chart_plotly, pt_scatter_plotly, style_scatte
 # creating the page first, so that I can then start catching functions
 def create_page():
     st.set_page_config(layout="wide")
-
-
-
-# set up page - saved copy of my code
-def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
-                ff_df, style_df, pt_df,
-                shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long):
-
+    today = get_today()
     st.title("NBA Scoreboard:"+" "+today.strftime("%m/%d/%Y"))
     st.write("Scores as of: ", today.strftime('%#I:%M:%p'))
     if st.button("Refresh"):
@@ -26,8 +19,15 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
         get_injuries.clear()
         get_ratings.clear()
         st.rerun()
-    st.write("Select weights for game rating categories:")
 
+
+
+# set up page - saved copy of my code
+def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
+                ff_df, style_df, pt_df,
+                shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long):
+
+    st.write("Select weights for game rating categories:")
     # with st.expander("Select importance for game rating categories:",expanded=True):
     col1, col2, col3, col4 = st.columns(4)
     with col1:

@@ -83,7 +83,11 @@ def get_ratings(x, var_means, var_stds):
         'national':0.0333,
         'ringer':0.0143,
         'fouls':0.0143,
-        'pace':0.0143
+        'pace':0.0143,
+        'player':0.0143,
+        'ball':0.0143,
+        'fg_con':0.0143,
+        'play_div':0.0143,
         }
 
     mean_dict = {
@@ -101,7 +105,8 @@ def get_ratings(x, var_means, var_stds):
         'national':0.2008, # from 2026 schedule
         'ringer':15.5, # calc distribution
         'fouls':var_means['fouls'], # from current season
-        'pace':var_means['pace'] # from current season
+        'pace':var_means['pace'], # from current season
+        'play_div':var_means['play_div'] # from current season
     }
 
     std_dict = {
@@ -119,7 +124,8 @@ def get_ratings(x, var_means, var_stds):
         'national':0.4008, # from 2026 schedule
         'ringer':6.0173, # calc distribution
         'fouls':var_stds['fouls'], # from current season
-        'pace':var_stds['pace'] # from current season
+        'pace':var_stds['pace'], # from current season
+        'play_div':var_stds['play_div'] # from current season
     }
 
     point_diff_val = initial_weight_dict['point_diff'] * ((abs(point_diff(x)) - mean_dict['point_diff'])/std_dict['point_diff'])*-1
@@ -139,9 +145,15 @@ def get_ratings(x, var_means, var_stds):
     national_val = initial_weight_dict['national'] * ((0 if x['broadcastDisplay']=='League Pass' else 1) - mean_dict['national'])/std_dict['national']
     ringer_val = initial_weight_dict['ringer'] * ((x['ring_avg'] - mean_dict['ringer'])/std_dict['ringer'])*-1
     foul_val = initial_weight_dict['fouls'] * (((x['total_fouls_home5'] + x['total_fouls_away5'])/2 - mean_dict['fouls'])/std_dict['fouls'])*-1
-    pace_val = initial_weight_dict['fouls'] * (((x['pace_home3'] + x['pace_away3'])/2 - mean_dict['pace'])/std_dict['pace'])
+    pace_val = initial_weight_dict['pace'] * (((x['pace_home3'] + x['pace_away3'])/2 - mean_dict['pace'])/std_dict['pace'])
 
-    rating = pace_val
+    player_val = initial_weight_dict['player'] * (x['Player Movement_home6'] + x['Player Movement_away6'])/2
+    ball_val = initial_weight_dict['ball'] * (x['Ball Movement_home6'] + x['Ball Movement_away6'])/2
+    fg_con_val = initial_weight_dict['fg_con'] * (x['Field Goal Concentration_home6'] + x['Field Goal Concentration_away6'])/2
+
+    play_div_val = initial_weight_dict['play_div'] * (((x['play_var_home7'] + x['play_var_away7'])/2 - mean_dict['play_div'])/std_dict['play_div'])
+
+    rating = play_div_val
 
     # apply normalization to 0-10 scale
     pass
