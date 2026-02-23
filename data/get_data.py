@@ -51,9 +51,7 @@ def get_network(today):
     nat_df['broadcastDisplay'] = nat_df['broadcastDisplay'].apply(lambda x: ', '.join(x))
     return nat_df
 
-
 # logo dictionary
-@st.cache_data()
 def get_logos():
     # https://www.sportslogos.net/teams/list_by_league/6/National-Basketball-Association-Logos/NBA-Logos/
 
@@ -91,7 +89,6 @@ def get_logos():
     }
     return logo_links
 
-
 # spread
 @st.cache_data()
 def get_spreads():
@@ -110,7 +107,6 @@ def get_rest():
     latest_games['rest'] = (today_norm - latest_games['game_date']).dt.days - 1
     # latest_games['rest'] = latest_games['rest'].apply(days_rest) # removing for now 
     return latest_games
-
 
 # injuries
 @st.cache_data()
@@ -157,7 +153,6 @@ def get_vorp(stat_year):
     df_agg = df.groupby('Player').agg({'VORP':'mean'}).reset_index()
     return df_agg
 
-
 # get award function:
 @st.cache_data()
 def get_award_data(year, current=False):
@@ -168,7 +163,6 @@ def get_award_data(year, current=False):
         return player_df.groupby('Player')['star_ind'].mean().reset_index()
     else:
         return player_df[(player_df['Team']!='2TM')&(player_df['Team']!='3TM')&(player_df['Player']!='League Average')]
-
 
 # get stars
 @st.cache_data()
@@ -228,9 +222,7 @@ def get_team_four():
     four_df.columns = lower_all(four_df)
     return four_df
 
-
 # build FF data
-@st.cache_data()
 def build_one_side_df(i,sb_df,team_stats_df,home=True, offense=True):
 
     measure_dict = {'off_rating_rank':'Offensive Rating','efg_pct_rank':'Effective Field Goal %','fta_rate_rank':'Free Throw Rate',
@@ -255,13 +247,7 @@ def build_one_side_df(i,sb_df,team_stats_df,home=True, offense=True):
     return temp_df
 
 # FF chart data
-@st.cache_data()
-def get_ff_chart_data(sb_df):
-    
-    # make API calls
-    adv_df = get_team_adv()
-    four_df = get_team_four()
-
+def get_ff_chart_data(sb_df, adv_df, four_df):
     # select columnns
     adv_red_df = adv_df[['team_id','off_rating','def_rating','off_rating_rank','def_rating_rank']]
     four_red_df = four_df[['team_id','efg_pct','fta_rate','tm_tov_pct','oreb_pct',
@@ -376,13 +362,7 @@ def get_team_fg_con_df():
     return fg_con_df
 
 # Build style chart data
-@st.cache_data()
-def get_style_chart_data():
-    adv_df = get_team_adv()
-    pm_df = get_team_pt_dist()
-    pass_df = get_team_pt_pass()
-    fg_con_df = get_team_fg_con_df()
-
+def get_style_chart_data(adv_df, pm_df, pass_df, fg_con_df):
     combined_df = adv_df[['team_id','pace','ast_pct']].merge(pm_df[['team_id','dist_miles']], on='team_id')
     combined_df = combined_df.merge(pass_df[['team_id','passes_made']],on='team_id')
     combined_df = combined_df.merge(fg_con_df[['team_id','fg_con_pct']],on='team_id')

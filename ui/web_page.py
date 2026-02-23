@@ -18,14 +18,8 @@ def create_page():
         get_scoreboard.clear()
         get_injuries.clear()
         get_ratings.clear()
+        combine_data.clear()
         st.rerun()
-
-
-
-# set up page - saved copy of my code
-def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
-                ff_df, style_df, pt_df,
-                shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long):
 
     st.write("Select weights for game rating categories:")
     # with st.expander("Select importance for game rating categories:",expanded=True):
@@ -46,7 +40,7 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
             label="Expected Quality of Play",
             min_value=0,
             max_value=100,
-            value=30,
+            value=35,
             step=1,
             format="%.0f%%",
             key='cat2'
@@ -57,7 +51,7 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
             label="Matchup",
             min_value=0,
             max_value=100,
-            value=20,
+            value=10,
             step=1,
             format="%.0f%%",
             key='cat3'
@@ -68,7 +62,7 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
             label="Style of Play",
             min_value=0,
             max_value=100,
-            value=10,
+            value=15,
             step=1,
             format="%.0f%%",
             key='cat4'
@@ -81,35 +75,40 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
     with col5:
         with st.expander("Game State Variables:",expanded=False):
             var1 = st.segmented_control(label = "Point Differential", options = ['High','Medium','Low','None'], key='var1', default='High')
-            var2 = st.segmented_control(label = "Time Remaining", options = ['High','Medium','Low','None'], key='var2', default='High')
-            var3 = st.segmented_control(label = "Game Flow", options = ['High','Medium','Low','None'], key='var3', default='Medium')
+            var2 = st.segmented_control(label = "Time Remaining", options = ['High','Medium','Low','None'], key='var2', default='Medium')
+            var3 = st.segmented_control(label = "Game Flow", options = ['High','Medium','Low','None'], key='var3', default='None')
 
     with col6:
         with st.expander("Expected Quality Variables:",expanded=False):
             var4 = st.segmented_control(label = "Team Strength", options = ['High','Medium','Low','None'], key='var4', default='High')
             var5 = st.segmented_control(label = "Player Availability", options = ['High','Medium','Low','None'], key='var5', default='High')
-            var6 = st.segmented_control(label = "Rest", options = ['High','Medium','Low','None'], key='var6', default='Medium')
-            var7 = st.segmented_control(label = "Offensive Rating", options = ['High','Medium','Low','None'], key='var7', default='Medium')
-            var8 = st.segmented_control(label = "Defensive Rating", options = ['High','Medium','Low','None'], key='var8', default='Medium')
+            var6 = st.segmented_control(label = "Rest", options = ['High','Medium','Low','None'], key='var6', default='Low')
+            var7 = st.segmented_control(label = "Offensive Rating", options = ['High','Medium','Low','None'], key='var7', default='None')
+            var8 = st.segmented_control(label = "Defensive Rating", options = ['High','Medium','Low','None'], key='var8', default='None')
     
     with col7:
         with st.expander("Matchup Variables:",expanded=False):
             val9 = st.segmented_control(label = "Rivalry", options = ['High','Medium','Low','None'], key='var9', default='Medium')
             var10 = st.segmented_control(label = "Style Contrasts", options = ['High','Medium','Low','None'], key='var10', default='Medium')
-            var11 = st.segmented_control(label = "Star Power", options = ['High','Medium','Low','None'], key='var11', default='Low')    
-            var12 = st.segmented_control(label = "National Broadcast", options = ['High','Medium','Low','None'], key='var12', default='Low')
+            var11 = st.segmented_control(label = "Star Power", options = ['High','Medium','Low','None'], key='var11', default='None')    
+            var12 = st.segmented_control(label = "National Broadcast", options = ['High','Medium','Low','None'], key='var12', default='None')
 
     with col8:
         with st.expander("Style Variables:",expanded=False):
-            var13 = st.segmented_control(label = "Zach Lowe Rankings", options = ['High','Medium','Low','None'], key='var13', default='Medium')
+            var13 = st.segmented_control(label = "Diversity of Play Types", options = ['High','Medium','Low','None'], key='var13', default='Medium')
             var14 = st.segmented_control(label = "Foul Rate", options = ['High','Medium','Low','None'], key='var14', default='Medium')
             var15 = st.segmented_control(label = "Pace", options = ['High','Medium','Low','None'], key='var15', default='Medium')
             var16 = st.segmented_control(label = "Ball Movement", options = ['High','Medium','Low','None'], key='var16', default='Medium')
             var17 = st.segmented_control(label = "Player Movement", options = ['High','Medium','Low','None'], key='var17', default='Medium')
             # var18 = st.segmented_control(label = "Assist Percent", options = ['High','Medium','Low','None'], key='var18', default='Medium')
             var18 = st.segmented_control(label = "Egalitarian Offense", options = ['High','Medium','Low','None'], key='var18', default='Medium')    
-            var19 = st.segmented_control(label = "Diversity of Play Types", options = ['High','Medium','Low','None'], key='var19', default='Medium')
+            var19 = st.segmented_control(label = "Zach Lowe Rankings", options = ['High','Medium','Low','None'], key='var19', default='None')
 
+
+# set up page - saved copy of my code
+def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
+                ff_df, style_df, pt_df,
+                shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long):
 
     # Create the tabs
     tab1, tab2, tab3 = st.tabs(['Live Games', 'Upcoming', 'Finished Games'])

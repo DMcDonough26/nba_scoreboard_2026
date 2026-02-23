@@ -4,12 +4,11 @@ import streamlit as st
 from util.helper import get_today, get_contrast, url_to_data_url
 from data.get_data import get_scoreboard, get_rivalries, get_lp_rankings, get_network, get_logos, get_spreads, get_rest, get_injuries,\
                           get_live_box_score, get_vorp, get_team_adv, get_ff_chart_data, get_stars, get_fouls, get_style_chart_data,\
-                          get_team_play_type, get_shot_data
+                          get_team_play_type, get_shot_data, get_team_four, get_team_pt_dist, get_team_pt_pass, get_team_fg_con_df
 from ratings.ratings import get_ratings
 
 
 # bring it all together
-@st.cache_data()
 def combine_data():
     today = get_today()
     scoreboard_raw_df = get_scoreboard()
@@ -23,10 +22,14 @@ def combine_data():
     live_box_df = get_live_box_score(scoreboard_raw_df)
     vorp_df_25 = get_vorp(2025)
     adv_df = get_team_adv()
-    ff_chart_df = get_ff_chart_data(scoreboard_raw_df)
+    four_df = get_team_four()
+    ff_chart_df = get_ff_chart_data(scoreboard_raw_df, adv_df, four_df)
     star_df = get_stars()
     foul_df = get_fouls()
-    style_df_wide, style_df = get_style_chart_data()
+    pm_df = get_team_pt_dist()
+    pass_df = get_team_pt_pass()
+    fg_con_df = get_team_fg_con_df()
+    style_df_wide, style_df = get_style_chart_data(adv_df, pm_df, pass_df, fg_con_df)
     pt_df = get_team_play_type()
     shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long = get_shot_data()
 
@@ -118,8 +121,8 @@ def combine_data():
     var_stds = {'injured':injured_vorp_team_df['injured_vorp'].std(),'off_rating':adv_df['off_rating'].std(), 'def_rating':adv_df['def_rating'].std(),
                 'fouls':foul_df['total_fouls'].std(), 'pace':adv_df['pace'].std(), 'play_div':play_div_df['play_var'].std()}
 
-    print(var_means['play_div'])
-    print(var_stds['play_div'])
+#     print(var_means['point_diff'])
+#     print(var_stds['point_diff'])
 
     # get rating
     scoreboard_raw_df['game_rating'] = scoreboard_raw_df.apply(get_ratings,axis=1, var_means=var_means,

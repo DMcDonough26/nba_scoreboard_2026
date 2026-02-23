@@ -92,7 +92,6 @@ def get_team_abbreviations2():
     return team_abbreviations2
 
 # note: if this is just binary, it could probably be rewritten as a one-line lambda function
-@st.cache_data()
 def days_rest(x):
     # if x == 0:
         # return 'B2B'
@@ -102,7 +101,6 @@ def days_rest(x):
         return str(x) + ' days'
 
 # check contrast
-@st.cache_data()
 def get_contrast(x):
     if ((x['off'] <= 5) & (x['def'] <=5)):
         return 1
@@ -110,7 +108,6 @@ def get_contrast(x):
         return 0
 
 # star function
-@st.cache_data()
 def define_star(x):
     response = 0
     if pd.isna(x):
@@ -123,7 +120,6 @@ def define_star(x):
     return response
 
 # alter URL for logos
-
 def url_to_data_url(url: str) -> str:
         r = requests.get(url)
         b64 = base64.b64encode(r.content).decode("utf-8")
