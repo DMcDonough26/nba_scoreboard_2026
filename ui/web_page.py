@@ -17,8 +17,6 @@ def create_page():
         get_today.clear()
         get_scoreboard.clear()
         get_injuries.clear()
-        get_ratings.clear()
-        combine_data.clear()
         st.rerun()
 
     st.write("Select weights for game rating categories:")
@@ -115,8 +113,43 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
 
     # st.write('Live Games')
     with tab1:
+##########################
+        # ORANGE = "#FF8C00"   # offense / highlight
+        # GRAY   = "#6e6e6e"   # defense / neutral
+        # LIGHT_GRAY = "#f5f5f5"
+        # ROW_ALT = "#fafafa"
+
+        # live_styled = (
+        # live_df.style
+        # .set_properties(**{
+        #     "font-size": "14px",
+        #     "color": GRAY,
+        #     "padding": "6px 12px",
+        # })
+        # .set_table_styles([
+        #     {"selector": "thead th",
+        #     "props": f"background-color: {LIGHT_GRAY}; color: {GRAY}; font-weight: 600;"},
+        #     {"selector": "tbody tr:nth-child(even)",
+        #     "props": f"background-color: {ROW_ALT};"},
+        # ])
+        # .highlight_max(color=ORANGE, subset=["Game Rating"])
+        # )
+
+        # st.markdown(f"""
+        # <style>
+        # [data-testid="stDataFrame"] table {{
+        #     border-collapse: separate !important;
+        #     border-spacing: 0 6px;
+        # }}
+        # [data-testid="stDataFrame"] tbody tr {{
+        #     border-radius: 8px;
+        #     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        # }}
+        # </style>
+        # """, unsafe_allow_html=True)
+##########################
         st.dataframe(
-            live_df,
+            live_df, #live_styled,
             column_config={
                 "Away Logo": st.column_config.ImageColumn("Away Logo"),
                 "Home Logo": st.column_config.ImageColumn("Home Logo")

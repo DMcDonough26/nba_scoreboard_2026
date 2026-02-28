@@ -145,79 +145,24 @@ def combine_data():
     # finished_raw_df['tipoff'] = pd.to_datetime(finished_raw_df['gameEt']).dt.time.apply(lambda x: x.strftime('%#I:%M:%p'))
 
     # create final dataframes
-    live_df = live_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry','awayTeam.score','homeTeam.score',\
-                            'diff','gameStatusText','win_prob','real_time',
-                            # temporary test fields
-                            'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
-                            'pace_home3','pace_away3',
-                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
-                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
-                            'play_var_home7','play_var_away7',
-                            #
-                            'game_rating','rest_away','rest_home','injuries_away','injuries_home',\
-                            'ring_avg','rob_avg']].copy()
+    live_df = live_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry','injuries_away','injuries_home',\
+                           'rest_away','rest_home','awayTeam.score','homeTeam.score', 'diff','gameStatusText','game_rating','ring_avg',]].copy()
 
-    live_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Away Score','Home Score','"The Diff"','Game Time Remaining',\
-                    'Win Probability','Est. Real Time Remaining',
-                    # temporary test fields
-                            'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
-                            'pace_home3','pace_away3',
-                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
-                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
-                            'play_var_home7','play_var_away7',
-                    #
-                    'Game Rating','Rest Away','Rest Home','Injuries Away','Injuries Home',\
-                    'Zach Lowe Rank',' Rob Perez Rank']
+    live_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Injuries Away','Injuries Home',\
+    'Rest Away','Rest Home','Away Score','Home Score','"The Diff"','Game Time Remaining','Game Rating','Zach Lowe Rank']
 
-    upcoming_df = upcoming_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry','spread','win_prob',\
-                                    'end_time',
-                                    # temporary test fields
-                            'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
-                            'pace_home3','pace_away3',
-                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
-                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
-                            'play_var_home7','play_var_away7',
-                                    #
-                                    'game_rating','rest_away','rest_home','injuries_away','injuries_home','ring_avg','rob_avg']].copy()
+    upcoming_df = upcoming_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry',\
+                                   'injuries_away','injuries_home','rest_away','rest_home','spread','game_rating','ring_avg']].copy()
 
-    upcoming_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Spread','Win Probability','Projected End Time',
-                            # temporary test fields
-                            'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
-                            'pace_home3','pace_away3',
-                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
-                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
-                            'play_var_home7','play_var_away7',
-                            #
-    'Game Rating',\
-                            'Rest Away','Rest Home','Injuries Away','Injuries Home','Zach Lowe Rank',' Rob Perez Rank']
+    upcoming_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Injuries Away','Injuries Home',\
+    'Rest Away','Rest Home','Spread','Game Rating','Zach Lowe Rank']
 
-    finished_df = finished_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry','awayTeam.score',\
-                                    'homeTeam.score','diff',
-                                    # temporary test fields
-                            'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
-                            'pace_home3','pace_away3',
-                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
-                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
-                            'play_var_home7','play_var_away7',
-                                    #
-                                    'game_rating','rest_away','rest_home','injuries_away','injuries_home','ring_avg','rob_avg']].copy()
+    finished_df = finished_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry',\
+                                   'injuries_away','injuries_home','rest_away','rest_home','awayTeam.score','homeTeam.score','diff',
+                                    'game_rating','ring_avg']].copy()
 
-    finished_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Away Score','Home Score','"The Diff"',
-                            # temporary test fields
-                            'biggest_lead','lead_changes','times_tied', 'injured_vorp_home2', 'injured_vorp_away2','off_rating_home3','off_rating_away3',
-                            'def_rating_home3','def_rating_away3', 'contrast', 'star_ind_home4', 'star_ind_away4', 'total_fouls_home5', 'total_fouls_away5',
-                            'pace_home3','pace_away3',
-                            'Player Movement_home6','Ball Movement_home6','Field Goal Concentration_home6',
-                            'Player Movement_away6','Ball Movement_away6','Field Goal Concentration_away6',
-                            'play_var_home7','play_var_away7',
-                            #
-    'Game Rating',\
-                            'Rest Away','Rest Home','Injuries Away','Injuries Home','Zach Lowe Rank',' Rob Perez Rank']
+    finished_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Injuries Away','Injuries Home',\
+    'Rest Away','Rest Home','Away Score','Home Score','"The Diff"','Game Rating','Zach Lowe Rank']
 
     return today, live_df, upcoming_df, finished_df, scoreboard_raw_df,\
            ff_chart_df, style_df, pt_df, shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long
