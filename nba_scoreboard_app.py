@@ -9,12 +9,12 @@ def main():
 
     # get ingredients
     today, live_df, upcoming_df, finished_df, scoreboard_raw_df,\
-    ff_chart_df, style_df, pt_df, shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long = combine_data()
+    ff_chart_df, style_df, pt_df, shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long, name_dict = combine_data()
 
     # launch page
     launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
                 ff_chart_df, style_df, pt_df,
-                shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long)
+                shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long, name_dict)
     
 
 main()

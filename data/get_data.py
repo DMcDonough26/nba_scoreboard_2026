@@ -43,7 +43,7 @@ def get_lp_rankings():
     lp_df = pd.read_excel('data\\League Pass Rankings.xlsx',sheet_name=0)
     return lp_df
 
-# network
+# broadcast network
 @st.cache_data()
 def get_network(today):
     bd_df = scoreboardv3.ScoreboardV3(today.strftime('%Y-%m-%d')).get_data_frames()[5]
@@ -52,6 +52,7 @@ def get_network(today):
     return nat_df
 
 # logo dictionary
+# consider saving the images to remove dependency?
 def get_logos():
     # https://www.sportslogos.net/teams/list_by_league/6/National-Basketball-Association-Logos/NBA-Logos/
 
@@ -95,28 +96,37 @@ def get_spreads():
     odds_df = pd.json_normalize(odds.Odds().get_dict()['games'])
     return odds_df
 
-# rest
+# calculate number of days of rest
 @st.cache_data()
 def get_rest():
+    # games
     games_df = leaguegamefinder.LeagueGameFinder(season_nullable='2025-26', season_type_nullable='Regular Season',league_id_nullable='00').get_data_frames()[0]
     games_df.columns = lower_all(games_df)
     games_df['game_date'] =  pd.to_datetime(games_df['game_date'])
     today_norm = pd.Timestamp('today').normalize()
+    
+    # prior games
     prior_games = games_df[games_df['game_date'] < today_norm]
     latest_games = prior_games.groupby('team_abbreviation')['game_date'].max().reset_index()
+    
+    # days between
     latest_games['rest'] = (today_norm - latest_games['game_date']).dt.days - 1
-    # latest_games['rest'] = latest_games['rest'].apply(days_rest) # removing for now 
     return latest_games
 
-# injuries
+# injury report from basketball reference
 @st.cache_data()
 def get_injuries():
+    # get injury report
     team_abbreviations = get_team_abbreviations()
     inury_url = "https://www.basketball-reference.com/friv/injuries.fcgi"
     injury_df = pd.read_html(inury_url)[0]
     injury_df['design'] = injury_df['Description'].apply(lambda x: x.split(' (')[0])
     injury_df['teamtricode'] = injury_df['Team'].apply(lambda x: team_abbreviations[x])
+
+    # only keep players who are confirmed out
     injury_df = injury_df[(injury_df['design'] == 'Out')|(injury_df['design'] == 'Out For Season')]
+
+    # create list of missing players for each team
     agg_df = injury_df.groupby(['teamtricode'])['Player'].unique().reset_index()
     agg_df['injuries'] = agg_df['Player'].apply(lambda x: ', '.join(x))
     return agg_df, injury_df
@@ -130,9 +140,11 @@ def get_live_box_score(x):
     times_tied_list = []
 
     for i, game_id in enumerate(x['gameId']):
+        # skip games that haven't started yet
         if x['gameStatus'][i] == 1:
             continue
         else:
+            # get fields for game flow variable
             game_id_list.append(game_id)
             game_box = boxscore_obj = boxscore.BoxScore(game_id)
             biggest_lead_list.append(max(game_box.get_dict()['game']['homeTeam']['statistics']['biggestLead'],
@@ -145,7 +157,7 @@ def get_live_box_score(x):
 
     return live_box_df
 
-# get vorp
+# get vorp to calculate value of injured players
 @st.cache_data()
 def get_vorp(stat_year):
     url = "https://www.basketball-reference.com/leagues/NBA_" + str(stat_year) + "_advanced.html"
@@ -153,7 +165,7 @@ def get_vorp(stat_year):
     df_agg = df.groupby('Player').agg({'VORP':'mean'}).reset_index()
     return df_agg
 
-# get award function:
+# get award data for star power
 @st.cache_data()
 def get_award_data(year, current=False):
     url = "https://www.basketball-reference.com/leagues/NBA_" + str(year) + "_advanced.html"
@@ -198,12 +210,18 @@ def get_stars():
     # aggregate to the tri code
     return df26_non_injured.groupby('teamtricode')['star_ind'].sum().reset_index()
 
-# get fouls
+# get foul data
 @st.cache_data()
 def get_fouls():
+
+    # committed
     foul_df = leaguedashteamstats.LeagueDashTeamStats(per_mode_detailed='PerGame').get_data_frames()[0]
+    
+    # drawn
     opp_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Opponent',per_mode_detailed='PerGame').get_data_frames()[0]
-    combined_df = foul_df[['TEAM_ID','PF']].merge(opp_df[['TEAM_ID','OPP_PF']],how='left',on='TEAM_ID')
+    
+    # combined
+    combined_df = foul_df[['TEAM_ID','TEAM_NAME','PF']].merge(opp_df[['TEAM_ID','OPP_PF']],how='left',on='TEAM_ID')
     combined_df['total_fouls'] = combined_df['PF'] + combined_df['OPP_PF']
     combined_df.columns = lower_all(combined_df)
     return combined_df
@@ -222,7 +240,7 @@ def get_team_four():
     four_df.columns = lower_all(four_df)
     return four_df
 
-# build FF data
+# helper function to build data for FF chart
 def build_one_side_df(i,sb_df,team_stats_df,home=True, offense=True):
 
     measure_dict = {'off_rating_rank':'Offensive Rating','efg_pct_rank':'Effective Field Goal %','fta_rate_rank':'Free Throw Rate',
@@ -289,7 +307,9 @@ def get_ff_chart_data(sb_df, adv_df, four_df):
 # play type data
 @st.cache_data()
 def get_team_play_type():
+    
     # api response
+    # unfortunately each play type requires its own API call
     iso = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Isolation',type_grouping_nullable='Offensive')
     time.sleep(1)
     trans = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Transition',type_grouping_nullable='Offensive')
@@ -307,26 +327,38 @@ def get_team_play_type():
     cut = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Cut',type_grouping_nullable='Offensive')
     time.sleep(1)
     os = synergyplaytypes.SynergyPlayTypes(play_type_nullable='OffScreen',type_grouping_nullable='Offensive')
-    time.sleep(1)
-    put = synergyplaytypes.SynergyPlayTypes(play_type_nullable='OffRebound',type_grouping_nullable='Offensive')
-    time.sleep(1)
-    misc = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Misc',type_grouping_nullable='Offensive')
+
+    # removed play types that are more about how the ball went in and less about what was run
+    # time.sleep(1)
+    # put = synergyplaytypes.SynergyPlayTypes(play_type_nullable='OffRebound',type_grouping_nullable='Offensive')
+    # time.sleep(1)
+    # misc = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Misc',type_grouping_nullable='Offensive')
 
     # dataframes
-    iso_df = iso.get_data_frames()[0]
-    trans_df = trans.get_data_frames()[0]
-    pnrb_df = pnrb.get_data_frames()[0]
-    pnrr_df = pnrr.get_data_frames()[0]
-    post_df = post.get_data_frames()[0]
-    spot_df = spot.get_data_frames()[0]
-    hand_df = hand.get_data_frames()[0]
-    cut_df = cut.get_data_frames()[0]
-    os_df = os.get_data_frames()[0]
-    put_df = put.get_data_frames()[0]
-    misc_df = misc.get_data_frames()[0]
+    iso_df = iso.get_data_frames()[0][['TEAM_ID','PLAY_TYPE','POSS_PCT','PPP']]
+    iso_df['PLAY_TYPE'] = 'Iso'
+    trans_df = trans.get_data_frames()[0][['TEAM_ID','PLAY_TYPE','POSS_PCT','PPP']]
+    pnrb_df = pnrb.get_data_frames()[0][['TEAM_ID','PLAY_TYPE','POSS_PCT','PPP']]
+    pnrr_df = pnrr.get_data_frames()[0][['TEAM_ID','PLAY_TYPE','POSS_PCT','PPP']]
+    post_df = post.get_data_frames()[0][['TEAM_ID','PLAY_TYPE','POSS_PCT','PPP']]
+    spot_df = spot.get_data_frames()[0][['TEAM_ID','PLAY_TYPE','POSS_PCT','PPP']]
+    hand_df = hand.get_data_frames()[0][['TEAM_ID','PLAY_TYPE','POSS_PCT','PPP']]
+    cut_df = cut.get_data_frames()[0][['TEAM_ID','PLAY_TYPE','POSS_PCT','PPP']]
+    os_df = os.get_data_frames()[0][['TEAM_ID','PLAY_TYPE','POSS_PCT','PPP']]
+    os_df['PLAY_TYPE'] = 'Off-ball Screen'
+    # put_df = put.get_data_frames()[0]
+    # misc_df = misc.get_data_frames()[0]
 
-    # transform the data
-    play_type_df = pd.concat([iso_df,trans_df,pnrb_df,pnrr_df,post_df,spot_df,hand_df,cut_df,os_df,put_df,misc_df],axis=0).reset_index(drop=True)
+    # combine the pick and roll play types into a single category
+    pnrc_stack = pd.concat([pnrb_df,pnrr_df],axis=0)
+    pnrc_stack['wt_ppp'] = pnrc_stack['POSS_PCT'] * pnrc_stack['PPP']
+    pnrc_df = pnrc_stack.groupby('TEAM_ID').agg({'POSS_PCT':'sum','wt_ppp':'sum'}).reset_index()
+    pnrc_df['PLAY_TYPE'] = 'Pick & Roll'
+    pnrc_df.columns = ['TEAM_ID','POSS_PCT','PPP','PLAY_TYPE']
+    pnrc_df = pnrc_df.reindex(columns=['TEAM_ID','PLAY_TYPE','POSS_PCT','PPP'])
+
+    # calculate relative frequency and efficiency
+    play_type_df = pd.concat([iso_df,trans_df,pnrc_df,post_df,spot_df,hand_df,cut_df,os_df],axis=0).reset_index(drop=True)
     play_type_df['avg_poss_pct'] = play_type_df.groupby('PLAY_TYPE')['POSS_PCT'].transform('mean')
     play_type_df['avg_ppp'] = play_type_df.groupby('PLAY_TYPE')['PPP'].transform('mean')
     play_type_df['rel_poss_pct'] = play_type_df['POSS_PCT'] / play_type_df['avg_poss_pct']
@@ -362,23 +394,28 @@ def get_team_fg_con_df():
     return fg_con_df
 
 # Build style chart data
-def get_style_chart_data(adv_df, pm_df, pass_df, fg_con_df):
+def get_style_chart_data(adv_df, pm_df, pass_df, fg_con_df, play_div_df):
+    
+    # combine data
     combined_df = adv_df[['team_id','pace','ast_pct']].merge(pm_df[['team_id','dist_miles']], on='team_id')
     combined_df = combined_df.merge(pass_df[['team_id','passes_made']],on='team_id')
     combined_df = combined_df.merge(fg_con_df[['team_id','fg_con_pct']],on='team_id')
+    combined_df = combined_df.merge(play_div_df,on='team_id')
 
+    # pace adjust player tracking data
     combined_df['dist_adj'] = combined_df['dist_miles'] / combined_df['pace']
     combined_df['passes_adj'] = combined_df['passes_made'] / combined_df['pace']
 
-    chart_df = combined_df[['team_id','pace','dist_adj','passes_adj','fg_con_pct','ast_pct']].copy()
-    chart_df.columns = ['Team','Pace','Player Movement','Ball Movement','Field Goal Concentration','Assist Percent']
+    chart_df = combined_df[['team_id','pace','dist_adj','passes_adj','fg_con_pct','ast_pct','play_var']].copy()
+    chart_df.columns = ['Team','Pace','Player Movement','Ball Movement','Field Goal Concentration','Assist Percent','Play Diversity']
 
-
+    # standardize columns so they are all on the same scale for the chart
     for column in chart_df.columns[1:]:
         mean = chart_df[column].mean()
         std = chart_df[column].std()
         chart_df[column] = (chart_df[column] - mean) / std
 
+    # melt for chart
     chart_df_long = chart_df.melt(id_vars=['Team'], value_vars=chart_df.columns[1:], var_name='Category', value_name='Value')
 
     return chart_df, chart_df_long

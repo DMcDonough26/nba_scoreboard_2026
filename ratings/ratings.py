@@ -6,14 +6,23 @@ import streamlit as st
 # get point diff
 def point_diff(x):
     if x['gameStatus']==1:
-        return x['spread']
+        # if we don't have a spread value assume it's the average final point diff (sometimes that endpoint is wonky on which day it has)
+        if pd.isna(x['spread']) == True:
+            return 12.7480
+        else:
+            return x['spread']
     else:
         return x['diff']
 
 # get time remaining
 def time_remaining(x):
+    
+    # upcoming games
     if x['gameStatus']==1:
         return 48*60
+    
+    # live games
+    # some exception handling for game breaks
     if x['gameStatus']==2:
         if x['gameStatusText'] == 'Half':
             return 24*60
@@ -21,6 +30,10 @@ def time_remaining(x):
             if x['gameStatusText'].split(' ')[0] == 'END':
                 qtr = int(x['gameStatusText'].split(' ')[1][1])
                 qtr_val = (4-qtr)*12*60
+                min_val = 0
+                sec_val = 0
+            if x['gameStatusText'].split(' ')[0][0:2] == 'OT':
+                qtr_val = 0
                 min_val = 0
                 sec_val = 0
             else:
@@ -33,12 +46,14 @@ def time_remaining(x):
                     min_val = int(time.split(":")[0])*60
                 sec_val = round(float(time.split(":")[1]))
             return qtr_val + min_val + sec_val
+    # finished games
     if x['gameStatus']==3:
         return 0
     else:
-        STOP # eventually replace this with better exception handling
+        pass
 
 # get game flow
+# this is a hierarchy of ratings based on how back-and-forth the game was, if there was a come back, or generally how close it was
 def game_flow(x):
 
     # need to adjust count for time remaining
@@ -64,7 +79,10 @@ def team_strength(x):
 # ratings
 def get_ratings(x, var_means, var_stds):
 
+    # dictionary that converts variable levels into numeric scale
     level_dictionary = {'High':3,'Medium':2,'Low':1,'None':0}
+
+    # calculate the total points within each category (this is the denominator for allocating that category's weight to its variables)
     game_state_total = level_dictionary[st.session_state.var1] + level_dictionary[st.session_state.var2] + level_dictionary[st.session_state.var3]
     exp_qual_total = level_dictionary[st.session_state.var4] + level_dictionary[st.session_state.var5] + level_dictionary[st.session_state.var6] +\
                      level_dictionary[st.session_state.var7] + level_dictionary[st.session_state.var8]
@@ -74,6 +92,7 @@ def get_ratings(x, var_means, var_stds):
                      level_dictionary[st.session_state.var16] + level_dictionary[st.session_state.var17] + level_dictionary[st.session_state.var18]+\
                      level_dictionary[st.session_state.var19]
     # weights
+    # allocate the category weight down to the variables based on the selections made within those categories
     weight_dict = {
         'point_diff':st.session_state.cat1/100 * level_dictionary[st.session_state.var1] / game_state_total,
         'time_remaining':st.session_state.cat1/100 * level_dictionary[st.session_state.var2] / game_state_total,
@@ -96,6 +115,7 @@ def get_ratings(x, var_means, var_stds):
         'play_div':st.session_state.cat4/100 * level_dictionary[st.session_state.var19] / style_total
         }
 
+    # mean values for standardizing variables
     mean_dict = {
         'point_diff':12.7480, # from 2025 season
         'time_remaining':1440.5, # from uniform distribution of seconds
@@ -115,6 +135,7 @@ def get_ratings(x, var_means, var_stds):
         'play_div':var_means['play_div'] # from current season
     }
 
+    # standard deviation values for standardizing variables
     std_dict = {
         'point_diff':9.6114, # from 2025 season
         'time_remaining':831.5287, # from uniform distribution of seconds
@@ -134,6 +155,7 @@ def get_ratings(x, var_means, var_stds):
         'play_div':var_stds['play_div'] # from current season
     }
 
+    # calculate the z score for each of the variables
     point_diff_val = weight_dict['point_diff'] * ((abs(point_diff(x)) - mean_dict['point_diff'])/std_dict['point_diff'])*-1
     time_remaining_val = weight_dict['time_remaining'] * ((time_remaining(x) - mean_dict['time_remaining'])/std_dict['time_remaining'])*-1
     if x['gameStatus'] != 1:
@@ -157,14 +179,15 @@ def get_ratings(x, var_means, var_stds):
     fg_con_val = weight_dict['fg_con'] * (x['Field Goal Concentration_home6'] + x['Field Goal Concentration_away6'])/2
     play_div_val = weight_dict['play_div'] * (((x['play_var_home7'] + x['play_var_away7'])/2 - mean_dict['play_div'])/std_dict['play_div'])
 
+    # combine into a final rating
     rating = point_diff_val + time_remaining_val + game_flow_val +\
              team_strength_val + player_avail_val + rest_val + off_rating_val + def_rating_val +\
              rivalry_val + contrast_val + star_val + national_val +\
              ringer_val + foul_val + pace_val + player_val + ball_val + fg_con_val + play_div_val
 
     # apply normalization to 0-10 scale
-    # this may just need to be observed/tweaked over time rather than estimated
-
-    rating = (rating - -0.5) / (1 - -0.5)
+    # I don't have all of these data points for historical games, so unfortunately I can't calculate the observed min/max
+    # instead, I will just tweak the min/max factors over time as need to try to keep game ratings within the range of 0-10
+    rating = (rating - -0.75) / (1 - -0.75)
 
     return round(rating*10,1)

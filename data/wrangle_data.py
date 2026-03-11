@@ -6,9 +6,11 @@ from data.get_data import get_scoreboard, get_rivalries, get_lp_rankings, get_ne
                           get_live_box_score, get_vorp, get_team_adv, get_ff_chart_data, get_stars, get_fouls, get_style_chart_data,\
                           get_team_play_type, get_shot_data, get_team_four, get_team_pt_dist, get_team_pt_pass, get_team_fg_con_df
 from ratings.ratings import get_ratings
+import numpy as np
 
+# this script has a single function that gets all of the data needed from get_data
+# it supplies that data back to the main python script which will pass it to the UI script to render the page
 
-# bring it all together
 def combine_data():
     today = get_today()
     scoreboard_raw_df = get_scoreboard()
@@ -26,11 +28,13 @@ def combine_data():
     ff_chart_df = get_ff_chart_data(scoreboard_raw_df, adv_df, four_df)
     star_df = get_stars()
     foul_df = get_fouls()
+    name_dict = dict(zip(list(foul_df['team_id']),list(foul_df['team_name'])))
     pm_df = get_team_pt_dist()
     pass_df = get_team_pt_pass()
     fg_con_df = get_team_fg_con_df()
-    style_df_wide, style_df = get_style_chart_data(adv_df, pm_df, pass_df, fg_con_df)
     pt_df = get_team_play_type()
+    play_div_df = pt_df.groupby('team_id')['play_var'].sum().reset_index()
+    style_df_wide, style_df = get_style_chart_data(adv_df, pm_df, pass_df, fg_con_df, play_div_df)
     shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long = get_shot_data()
 
     # merge rival
@@ -54,8 +58,13 @@ def combine_data():
 
     # merge odds
     odds_today_df = odds_df.merge(scoreboard_raw_df['gameId'], how='inner',on='gameId')
-    odds_today_df['spread'] = odds_today_df['markets'].apply(lambda x: float(x[1]['books'][0]['outcomes'][0]['spread']))
-    scoreboard_raw_df = scoreboard_raw_df.merge(odds_today_df[['gameId','spread']],how='left',on='gameId')
+
+    # added exception handling since odds endpoint can be wonky about which day's games it provides
+    try:
+        odds_today_df['spread'] = odds_today_df['markets'].apply(lambda x: float(x[1]['books'][0]['outcomes'][0]['spread']))
+        scoreboard_raw_df = scoreboard_raw_df.merge(odds_today_df[['gameId','spread']],how='left',on='gameId')
+    except:
+        scoreboard_raw_df['spread'] = None
 
     # merge rest
     scoreboard_raw_df = scoreboard_raw_df.merge(latest_games[['team_abbreviation','rest']],how='left',left_on='homeTeam.teamTricode',right_on='team_abbreviation')
@@ -110,29 +119,30 @@ def combine_data():
                                                 suffixes=('_home6','_away6'))
 
     # play diversity
-    play_div_df = pt_df.groupby('team_id')['play_var'].sum().reset_index()
-
     scoreboard_raw_df = scoreboard_raw_df.merge(play_div_df[['team_id','play_var']],how='left',left_on='homeTeam.teamId',right_on='team_id')
     scoreboard_raw_df = scoreboard_raw_df.merge(play_div_df[['team_id','play_var']],how='left',left_on='awayTeam.teamId',right_on='team_id',\
                                                 suffixes=('_home7','_away7'))
     
+    # calculate mean and standard deviation to pass to ratings for normalization
     var_means = {'injured':injured_vorp_team_df['injured_vorp'].mean(), 'off_rating':adv_df['off_rating'].mean(), 'def_rating':adv_df['def_rating'].mean(),
                  'fouls':foul_df['total_fouls'].mean(), 'pace':adv_df['pace'].mean(), 'play_div':play_div_df['play_var'].mean()}
     var_stds = {'injured':injured_vorp_team_df['injured_vorp'].std(),'off_rating':adv_df['off_rating'].std(), 'def_rating':adv_df['def_rating'].std(),
                 'fouls':foul_df['total_fouls'].std(), 'pace':adv_df['pace'].std(), 'play_div':play_div_df['play_var'].std()}
 
-#     print(var_means['point_diff'])
-#     print(var_stds['point_diff'])
-
     # get rating
     scoreboard_raw_df['game_rating'] = scoreboard_raw_df.apply(get_ratings,axis=1, var_means=var_means,
                                                                 var_stds=var_stds)
-    # scoreboard_raw_df['game_rating'] = 'TBD' # to be updated with formula and user inputs
 
     # placeholder fields
     scoreboard_raw_df['win_prob'] = 'TBD' # to be updated (calculate live, pull ML from somewhere in advance)
     scoreboard_raw_df['real_time'] = 'TBD' # to be updated with model
     scoreboard_raw_df['end_time'] = 'TBD' # add real time remaining to current/tipoff time
+
+    # extra fields for display
+
+    scoreboard_raw_df['min_win'] = scoreboard_raw_df[['away_w82','home_w82']].min(axis=1)
+    scoreboard_raw_df['min_rest'] = scoreboard_raw_df[['rest_away','rest_home']].min(axis=1)
+    scoreboard_raw_df["riv_disp"] = np.where(scoreboard_raw_df['rivalry'] == 1, "🔥", "")
 
     # split into sections
     upcoming_raw_df = scoreboard_raw_df[scoreboard_raw_df['gameStatus']==1].copy()
@@ -144,25 +154,24 @@ def combine_data():
     finished_raw_df = scoreboard_raw_df[scoreboard_raw_df['gameStatus']==3].copy()
     # finished_raw_df['tipoff'] = pd.to_datetime(finished_raw_df['gameEt']).dt.time.apply(lambda x: x.strftime('%#I:%M:%p'))
 
-    # create final dataframes
-    live_df = live_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry','injuries_away','injuries_home',\
-                           'rest_away','rest_home','awayTeam.score','homeTeam.score', 'diff','gameStatusText','game_rating','ring_avg',]].copy()
+    # create final dataframes (select and rename relevant columns)
+    live_df = live_raw_df[['away_logo','home_logo','game_rating','riv_disp','gameStatusText','awayTeam.score','homeTeam.score','broadcastDisplay',\
+                            'away_w82','home_w82','injuries_away','injuries_home']].copy().sort_values(by='game_rating',ascending=False)
 
-    live_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Injuries Away','Injuries Home',\
-    'Rest Away','Rest Home','Away Score','Home Score','"The Diff"','Game Time Remaining','Game Rating','Zach Lowe Rank']
+    live_df.columns = ['Away','Home','Game Rating','Rivalry','Game Clock','Away ','Home ','Network',\
+                        'Away W82','Home W82','Injuries Away','Injuries Home']
 
-    upcoming_df = upcoming_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry',\
-                                   'injuries_away','injuries_home','rest_away','rest_home','spread','game_rating','ring_avg']].copy()
+    upcoming_df = upcoming_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','game_rating','riv_disp','spread',\
+                            'away_w82','home_w82','injuries_away','injuries_home']].copy().sort_values(by='game_rating',ascending=False)
 
-    upcoming_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Injuries Away','Injuries Home',\
-    'Rest Away','Rest Home','Spread','Game Rating','Zach Lowe Rank']
+    upcoming_df.columns = ['Tipoff (ET)','Network','Away','Home','Game Rating','Rivarly','Spread','Away W82', 'Home W82',\
+                            'Injuries Away','Injuries Home']
 
-    finished_df = finished_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','away_w82','home_w82','rivalry',\
-                                   'injuries_away','injuries_home','rest_away','rest_home','awayTeam.score','homeTeam.score','diff',
-                                    'game_rating','ring_avg']].copy()
+    finished_df = finished_raw_df[['away_logo','home_logo','game_rating','riv_disp','awayTeam.score','homeTeam.score','broadcastDisplay',\
+                            'away_w82','home_w82','injuries_away','injuries_home']].copy().sort_values(by='game_rating',ascending=False)
 
-    finished_df.columns = ['Tipoff (ET)','Network','Away Logo','Home Logo','Away W82', 'Home W82','Rivalry','Injuries Away','Injuries Home',\
-    'Rest Away','Rest Home','Away Score','Home Score','"The Diff"','Game Rating','Zach Lowe Rank']
+    finished_df.columns = ['Away','Home','Game Rating','Rivalry','Away ','Home ','Network',\
+                        'Away W82','Home W82','Injuries Away','Injuries Home']
 
     return today, live_df, upcoming_df, finished_df, scoreboard_raw_df,\
-           ff_chart_df, style_df, pt_df, shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long
+           ff_chart_df, style_df, pt_df, shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long, name_dict

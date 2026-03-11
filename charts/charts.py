@@ -5,6 +5,9 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
+# this script holds the code for the charts in the what-to-watch section
+# a lot of this code was AI generated (at least to start) with modification as needed to accerlate learning curve/code dev
+
 def lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side, x_min=0.5, x_max=30.5):
 
     # --- Ordinal helper ---
@@ -61,10 +64,13 @@ def lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side, x_min=0.5, x
         y=df["measure"],
         mode="markers+text",
         marker=dict(size=18, color=offense_color),
-        text=[ordinal(v) for v in df[selected_team]],   # <-- UPDATED
+        text=[ordinal(v) for v in df[selected_team]],
         textposition="top center",
-        name=selected_team
+        name=selected_team,
+        hovertemplate = selected_team + ": %{text} %{y}<extra></extra>"
+
     ))
+
 
     # --- Defense points ---
     fig.add_trace(go.Scatter(
@@ -74,7 +80,8 @@ def lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side, x_min=0.5, x
         marker=dict(size=18, color=defense_color),
         text=[ordinal(v) for v in df[opponent]],        # <-- UPDATED
         textposition="top center",
-        name=opponent
+        name=opponent,
+        hovertemplate = opponent + ": %{text} %{y}<extra></extra>"
     ))
 
     # Layout
@@ -109,6 +116,12 @@ def lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side, x_min=0.5, x
 def pt_scatter_plotly(pt_chart_df):
 
     df = pd.DataFrame(pt_chart_df)
+
+    # this helps the tooltip show relative frequency/efficiency in the desired format
+    df["freq_delta"] = ((df["rel_poss_pct"] - 1) * 100).round(0)   # e.g. 1.20 -> +20
+    df["eff_delta"]  = ((df["rel_ppp"]      - 1) * 100).round(0)   # e.g. 0.85 -> -15
+    customdata = df[["freq_delta", "eff_delta"]].to_numpy()
+
 
     title_var = (
         st.session_state.selected_side
@@ -148,12 +161,15 @@ def pt_scatter_plotly(pt_chart_df):
         text=df["play_type"],
         textposition="top center",
         name="Play Type",
+        customdata=customdata,
         hovertemplate=(
-            "<b>%{text}</b><br>" +
-            "Rel Frequency (raw): %{x:.2f}<br>" +
-            "Rel Efficiency (raw): %{y:.2f}<extra></extra>"
+            "<b>%{text}</b><br>"
+            "Frequency: %{customdata[0]:+.0f}%<br>"
+            "Efficiency: %{customdata[1]:+.0f}%<extra></extra>"
         )
-    ))
+
+
+        ))
 
     # --- Axes formatting ---
     fig.update_xaxes(
@@ -191,8 +207,7 @@ def pt_scatter_plotly(pt_chart_df):
     return fig
 
 
-def style_scatter_plotly(style_df, selected_side, selected_id):
-
+def style_scatter_plotly(style_df, selected_side, selected_id, name_dict):
     df = pd.DataFrame(style_df)
 
     # --- Ordinal helper (same as lollipop chart) ---
@@ -215,6 +230,8 @@ def style_scatter_plotly(style_df, selected_side, selected_id):
           .astype(int)
     )
 
+    df['Name'] = df['Team'].apply(lambda x: name_dict[x])
+
     # Split data
     df_all = df
     df_selected = df[df["Team"] == selected_id]
@@ -227,10 +244,10 @@ def style_scatter_plotly(style_df, selected_side, selected_id):
         y=df_all["Value"],
         mode="markers",
         marker=dict(size=14, color=base_color),
-        name="All Teams",
+        text=[ordinal(r) for r in df_all["Rank"]],   # ordinal rank
+        customdata=df_all['Name'],
         hovertemplate=(
-            "Category: %{x}<br>"
-            "Value: %{y:.2f}<extra></extra>"
+            "%{customdata}: %{text}<extra></extra>"
         )
     ))
 
@@ -242,12 +259,10 @@ def style_scatter_plotly(style_df, selected_side, selected_id):
         marker=dict(size=16, color=highlight_color),
         text=[ordinal(r) for r in df_selected["Rank"]],   # ordinal rank
         textposition="middle right",
-        name="Selected Team",
+        name=selected_side,
         hovertemplate=(
-            "<b>Selected Team</b><br>"
-            "Category: %{x}<br>"
-            "Value: %{y:.2f}<br>"
-            "Rank: %{text}<extra></extra>"
+            selected_side +
+            ": %{text}<extra></extra>"
         )
     ))
 
@@ -281,45 +296,63 @@ def style_scatter_plotly(style_df, selected_side, selected_id):
 
 def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq=True):
 
+        # --- Ordinal helper ---
+    def ordinal(n):
+        n = int(n)
+        if 10 <= n % 100 <= 20:
+            suffix = "th"
+        else:
+            suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+        return f"{n}{suffix}"
+
     # establish teams
     offense_name = selected_side
     defense_name = matchup_dict[selected_side]
     offense_id = team_dict[selected_side]
-    defense_id = team_dict[selected_side]
+    defense_id = team_dict[defense_name] # this needs to be the other team
 
     chart_title = (
         "Shot Distribution by Location" if freq else "Field Goal Percentage by Location"
     )
 
+    off_df['off_rank_text'] = off_df.groupby('Measure')['Offense'].rank(ascending=False) # 1st means you get the most
+    off_df['off_rank_bar'] = off_df.groupby('Measure')['Offense'].rank(ascending=True)
+    def_df['def_rank_text'] = def_df.groupby('Measure')['Defense'].rank(ascending=True) # 1st means you give up the least
+    def_df['def_rank_bar'] = def_df.groupby('Measure')['Defense'].rank(ascending=False)
+
     # create chart dataframes
     off_df_team = off_df[off_df['team_id'] == offense_id]
     def_df_team = def_df[def_df['team_id'] == defense_id]
-    df = off_df_team.merge(def_df_team[['Measure', 'Defense']], on='Measure')
+    df = off_df_team.merge(def_df_team[['Measure', 'def_rank_text','def_rank_bar']], on='Measure')
 
     fig = go.Figure()
 
     # --- Offense bar ---
     fig.add_trace(go.Bar(
         x=df["Measure"],
-        y=df["Offense"],
+        y=df["off_rank_bar"],
         name=offense_name + " Offense",
         marker_color="#FF8C00",
-        text=[f"{v:.0%}" for v in df["Offense"]],
+        # text=[f"{v:.0%}" for v in df["Offense"]],
+        text = [ordinal(v) for v in df['off_rank_text']],
         textposition="outside",
         textfont=dict(color="#FF8C00", size=18),
-        width=0.35   # <-- narrower bar
+        width=0.35,   # <-- narrower bar
+        hovertemplate = offense_name + " Offense: %{text} Highest %{x}<extra></extra>"
     ))
 
     # --- Defense bar ---
     fig.add_trace(go.Bar(
         x=df["Measure"],
-        y=df["Defense"],
+        y=df["def_rank_bar"],
         name=defense_name + " Defense",
         marker_color="#6e6e6e",
-        text=[f"{v:.0%}" for v in df["Defense"]],
+        # text=[f"{v:.0%}" for v in df["Defense"]],
+        text = [ordinal(v) for v in df['def_rank_text']],
         textposition="outside",
         textfont=dict(color="#6e6e6e", size=18),
-        width=0.35  # <-- narrower bar
+        width=0.35,  # <-- narrower bar
+        hovertemplate = defense_name + " Defense: %{text} Lowest %{x}<extra></extra>"
     ))
 
     # Layout

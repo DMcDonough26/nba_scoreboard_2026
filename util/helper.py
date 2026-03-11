@@ -16,9 +16,11 @@ def get_today():
 def format_time(x):
     return pd.to_datetime(x).strftime('%#I:%M:%p')
 
+# lower case the field names
 def lower_all(df):
     return [x.lower() for x in df.columns]
 
+# map team names and abbreviations
 def get_team_abbreviations():
     team_abbreviations = {
         "Atlanta Hawks": "ATL",
@@ -54,7 +56,7 @@ def get_team_abbreviations():
     }
     return team_abbreviations
 
-# version 2
+# map abbreviations across sources
 def get_team_abbreviations2():
     team_abbreviations2 = {
         "ATL": "ATL",
@@ -91,23 +93,14 @@ def get_team_abbreviations2():
     
     return team_abbreviations2
 
-# note: if this is just binary, it could probably be rewritten as a one-line lambda function
-def days_rest(x):
-    # if x == 0:
-        # return 'B2B'
-    if x == 1:
-        return '1 day'
-    else:
-        return str(x) + ' days'
-
-# check contrast
+# check contrast in four factors for ratings
 def get_contrast(x):
     if ((x['off'] <= 5) & (x['def'] <=5)):
         return 1
     else:
         return 0
 
-# star function
+# use NBA's definition of star for injury rating
 def define_star(x):
     response = 0
     if pd.isna(x):
