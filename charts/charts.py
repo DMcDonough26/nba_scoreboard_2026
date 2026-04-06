@@ -43,8 +43,10 @@ def lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side, x_min=0.5, x
     df = df.sort_values("measure")
 
     # Colors
-    offense_color = '#FF8C00'
-    defense_color = '#6e6e6e'
+    # offense_color = '#FF8C00'
+    # defense_color = '#6e6e6e'
+    offense_color = '#FF8200'
+    defense_color = '#8A8D8F'
 
     fig = go.Figure()
 
@@ -129,7 +131,8 @@ def pt_scatter_plotly(pt_chart_df):
     )
 
     # Colors
-    point_color = "#FF8C00"
+    # point_color = "#FF8C00"
+    point_color = "#FF8200"
     line_color = "#D3D3D3"
 
     fig = go.Figure()
@@ -184,10 +187,10 @@ def pt_scatter_plotly(pt_chart_df):
 
     fig.update_yaxes(
         title="Relative Efficiency (%)",
-        range=[0.5, 1.5],
+        range=[0.25, 1.75],
         tickmode="array",
-        tickvals=[0.5, 0.75, 1, 1.25, 1.5],
-        ticktext=[f"{round((v - 1) * 100)}%" for v in [0.5, 0.75, 1, 1.25, 1.5]],
+        tickvals=[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75],
+        ticktext=[f"{round((v - 1) * 100)}%" for v in [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75]],
         showgrid=False,
         zeroline=False
     )
@@ -220,8 +223,10 @@ def style_scatter_plotly(style_df, selected_side, selected_id, name_dict):
         return f"{n}{suffix}"
 
     # Colors
-    base_color = "#6e6e6e"
-    highlight_color = "#FF8C00"
+    # base_color = "#6e6e6e"
+    # highlight_color = "#FF8C00"
+    base_color = "#8A8D8F"
+    highlight_color = "#FF8200"
 
     # --- Compute rank within each Category (1 = highest Value) ---
     df["Rank"] = (
@@ -332,11 +337,13 @@ def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq
         x=df["Measure"],
         y=df["off_rank_bar"],
         name=offense_name + " Offense",
-        marker_color="#FF8C00",
+        # marker_color="#FF8C00",
+        marker_color="#FF8200",
         # text=[f"{v:.0%}" for v in df["Offense"]],
         text = [ordinal(v) for v in df['off_rank_text']],
         textposition="outside",
-        textfont=dict(color="#FF8C00", size=18),
+        # textfont=dict(color="#FF8C00", size=18),
+        textfont=dict(color="#FF8200", size=18),
         width=0.35,   # <-- narrower bar
         hovertemplate = offense_name + " Offense: %{text} Highest %{x}<extra></extra>"
     ))
@@ -346,11 +353,13 @@ def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq
         x=df["Measure"],
         y=df["def_rank_bar"],
         name=defense_name + " Defense",
-        marker_color="#6e6e6e",
+        # marker_color="#6e6e6e",
+        marker_color="#8A8D8F",
         # text=[f"{v:.0%}" for v in df["Defense"]],
         text = [ordinal(v) for v in df['def_rank_text']],
         textposition="outside",
-        textfont=dict(color="#6e6e6e", size=18),
+        # textfont=dict(color="#6e6e6e", size=18),
+        textfont=dict(color="#8A8D8F", size=18),
         width=0.35,  # <-- narrower bar
         hovertemplate = defense_name + " Defense: %{text} Lowest %{x}<extra></extra>"
     ))
@@ -379,7 +388,8 @@ def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq
     fig.update_yaxes(
         showticklabels=False,
         showgrid=False,
-        zeroline=False
+        zeroline=False,
+        range=[0,33]
     )
 
     fig.update_xaxes(tickfont=dict(size=18))

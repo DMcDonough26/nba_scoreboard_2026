@@ -32,7 +32,7 @@ def time_remaining(x):
                 qtr_val = (4-qtr)*12*60
                 min_val = 0
                 sec_val = 0
-            if x['gameStatusText'].split(' ')[0][0:2] == 'OT':
+            elif x['gameStatusText'].split(' ')[0][0:2] == 'OT':
                 qtr_val = 0
                 min_val = 0
                 sec_val = 0
@@ -87,10 +87,9 @@ def get_ratings(x, var_means, var_stds):
     exp_qual_total = level_dictionary[st.session_state.var4] + level_dictionary[st.session_state.var5] + level_dictionary[st.session_state.var6] +\
                      level_dictionary[st.session_state.var7] + level_dictionary[st.session_state.var8]
     matchup_total =  level_dictionary[st.session_state.var9] + level_dictionary[st.session_state.var10] + level_dictionary[st.session_state.var11] +\
-                     level_dictionary[st.session_state.var12]
+                     level_dictionary[st.session_state.var12] + level_dictionary[st.session_state.var19]
     style_total = level_dictionary[st.session_state.var13] + level_dictionary[st.session_state.var14] + level_dictionary[st.session_state.var15] +\
-                     level_dictionary[st.session_state.var16] + level_dictionary[st.session_state.var17] + level_dictionary[st.session_state.var18]+\
-                     level_dictionary[st.session_state.var19]
+                     level_dictionary[st.session_state.var16] + level_dictionary[st.session_state.var17] + level_dictionary[st.session_state.var18]
     # weights
     # allocate the category weight down to the variables based on the selections made within those categories
     weight_dict = {
@@ -106,13 +105,13 @@ def get_ratings(x, var_means, var_stds):
         'contrast':st.session_state.cat3/100 * level_dictionary[st.session_state.var10] / matchup_total,
         'star':st.session_state.cat3/100 * level_dictionary[st.session_state.var11] / matchup_total,
         'national':st.session_state.cat3/100 * level_dictionary[st.session_state.var12] / matchup_total,
-        'ringer':st.session_state.cat4/100 * level_dictionary[st.session_state.var13] / style_total,
+        'ringer':st.session_state.cat3/100 * level_dictionary[st.session_state.var19] / matchup_total,
+        'play_div':st.session_state.cat4/100 * level_dictionary[st.session_state.var13] / style_total,
         'fouls':st.session_state.cat4/100 * level_dictionary[st.session_state.var14] / style_total,
         'pace':st.session_state.cat4/100 * level_dictionary[st.session_state.var15] / style_total,
-        'player':st.session_state.cat4/100 * level_dictionary[st.session_state.var16] / style_total,
-        'ball':st.session_state.cat4/100 * level_dictionary[st.session_state.var17] / style_total,
-        'fg_con':st.session_state.cat4/100 * level_dictionary[st.session_state.var18] / style_total,
-        'play_div':st.session_state.cat4/100 * level_dictionary[st.session_state.var19] / style_total
+        'ball':st.session_state.cat4/100 * level_dictionary[st.session_state.var16] / style_total,
+        'player':st.session_state.cat4/100 * level_dictionary[st.session_state.var17] / style_total,
+        'fg_con':st.session_state.cat4/100 * level_dictionary[st.session_state.var18] / style_total
         }
 
     # mean values for standardizing variables

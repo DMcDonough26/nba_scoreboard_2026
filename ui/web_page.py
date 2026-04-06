@@ -28,7 +28,7 @@ def create_page():
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         cat1 = st.slider(
-            label="Current Game State",
+            label="Game State",
             min_value=0,
             max_value=100,
             value=40,
@@ -39,7 +39,7 @@ def create_page():
 
     with col2:
         cat2 = st.slider(
-            label="Expected Quality of Play",
+            label="Matchup Quality",
             min_value=0,
             max_value=100,
             value=35,
@@ -50,7 +50,7 @@ def create_page():
 
     with col3:
         cat3 = st.slider(
-            label="Matchup",
+            label="Narrative Context",
             min_value=0,
             max_value=100,
             value=10,
@@ -95,6 +95,8 @@ def create_page():
             var10 = st.segmented_control(label = "Style Contrasts", options = ['High','Medium','Low','None'], key='var10', default='Medium')
             var11 = st.segmented_control(label = "Star Power", options = ['High','Medium','Low','None'], key='var11', default='None')    
             var12 = st.segmented_control(label = "National Broadcast", options = ['High','Medium','Low','None'], key='var12', default='None')
+            # I moved this variable up later on and didn't want to renumber all of the others so it remains 19
+            var19 = st.segmented_control(label = "Zach Lowe Rankings", options = ['High','Medium','Low','None'], key='var19', default='None')
 
     with col8:
         with st.expander("Style Variables:",expanded=False):
@@ -105,7 +107,6 @@ def create_page():
             var17 = st.segmented_control(label = "Player Movement", options = ['High','Medium','Low','None'], key='var17', default='Medium')
             # var18 = st.segmented_control(label = "Assist Percent", options = ['High','Medium','Low','None'], key='var18', default='Medium')
             var18 = st.segmented_control(label = "Egalitarian Offense", options = ['High','Medium','Low','None'], key='var18', default='Medium')    
-            var19 = st.segmented_control(label = "Zach Lowe Rankings", options = ['High','Medium','Low','None'], key='var19', default='None')
 
 
 # launch the scoreboard dataframes and the what to watch charts
@@ -117,10 +118,20 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
     # ORANGE = "#FF8C00"
     # LIGHT_ORANGE = "#FFB366"
     # TEAL = "#007A7A"
-    LIGHT_TEAL = "#66D1C7"
+    # LIGHT_TEAL = "#66D1C7"
+    # color_choice = "#00B2A9"
+
 
     # One‑color lighter teal gradient
-    cmap = sns.light_palette(LIGHT_TEAL, as_cmap=True)
+    # cmap = sns.light_palette(color_choice, as_cmap=True)
+
+    import matplotlib.colors as mcolors
+    color1 = "#EF426F" # low value
+    color2 = "#00B2A9" # high value
+    mid = "#ffffff"   # white neutral
+    cmap = mcolors.LinearSegmentedColormap.from_list(
+    "custom_div", [color1, mid, color2]
+    )
     
 
 
@@ -139,7 +150,7 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
 
     upcoming_styled = (
         upcoming_df.style
-            .format({"Game Rating": "{:.1f}"})   # <-- THIS fixes the display
+            .format({"Game Rating": "{:.1f}","Spread": "{:.1f}"})   # <-- THIS fixes the display
             .background_gradient(cmap=cmap, subset=["Game Rating"],vmin=0,vmax=10)
     )
 
