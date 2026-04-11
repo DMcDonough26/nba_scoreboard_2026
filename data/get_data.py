@@ -174,7 +174,7 @@ def get_award_data(year, current=False):
         player_df['star_ind'] = player_df['Awards'].apply(define_star)
         return player_df.groupby('Player')['star_ind'].mean().reset_index()
     else:
-        return player_df[(player_df['Team']!='2TM')&(player_df['Team']!='3TM')&(player_df['Player']!='League Average')]
+        return player_df[(player_df['Team']!='2TM')&(player_df['Team']!='3TM')&(player_df['Team']!='4TM')&(player_df['Player']!='League Average')]
 
 # get stars
 @st.cache_data()

@@ -6,7 +6,7 @@ from data.get_data import get_scoreboard, get_injuries
 from ratings.ratings import get_ratings
 from charts.charts import lollipop_chart_plotly, pt_scatter_plotly, style_scatter_plotly, shot_bar_plotly
 import seaborn as sns
-
+import matplotlib.colors as mcolors
 
 # creating the page first, so that I can then start catching functions
 # moved the weights up this function to help with caching later on
@@ -125,7 +125,6 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
     # One‑color lighter teal gradient
     # cmap = sns.light_palette(color_choice, as_cmap=True)
 
-    import matplotlib.colors as mcolors
     color1 = "#EF426F" # low value
     color2 = "#00B2A9" # high value
     mid = "#ffffff"   # white neutral
