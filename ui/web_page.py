@@ -27,7 +27,7 @@ def create_page():
     COOLDOWN = timedelta(seconds=30)
 
     if "last_refresh" not in st.session_state:
-        st.session_state.last_refresh = datetime.min
+        st.session_state.last_refresh = datetime.min.replace(tzinfo=eastern)
 
     # create refresh button
     if st.button("Refresh"):
