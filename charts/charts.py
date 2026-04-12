@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
 # this script holds the code for the charts in the what-to-watch section
-# a lot of this code was AI generated (at least to start) with modification as needed to accerlate learning curve/code dev
+# a lot of this code was AI generated (at least to start) to accerlate learning curve/code dev with modification as needed
 
+
+# this is the four factors lollipop chart
 def lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side, x_min=0.5, x_max=30.5):
 
     # --- Ordinal helper ---
@@ -43,7 +45,7 @@ def lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side, x_min=0.5, x
     df = df.sort_values("measure")
 
     # Colors
-    # offense_color = '#FF8C00'
+    # offense_color = '#FF8C00' -- original  colors before moving 100% to fiesta colors
     # defense_color = '#6e6e6e'
     offense_color = '#FF8200'
     defense_color = '#8A8D8F'
@@ -114,65 +116,65 @@ def lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side, x_min=0.5, x
 
     return fig
 
-
+# this is the play type scatter plot
 def pt_scatter_plotly(pt_chart_df):
 
     df = pd.DataFrame(pt_chart_df)
 
-    # this helps the tooltip show relative frequency/efficiency in the desired format
-    df["freq_delta"] = ((df["rel_poss_pct"] - 1) * 100).round(0)   # e.g. 1.20 -> +20
-    df["eff_delta"]  = ((df["rel_ppp"]      - 1) * 100).round(0)   # e.g. 0.85 -> -15
+    # --- Compute deltas for tooltip ---
+    df["freq_delta"] = ((df["rel_poss_pct"] - 1) * 100).round(0)
+    df["eff_delta"]  = ((df["rel_ppp"]      - 1) * 100).round(0)
     customdata = df[["freq_delta", "eff_delta"]].to_numpy()
 
-
+    # --- Title ---
     title_var = (
         st.session_state.selected_side
         + " Offense: Relative Frequency and Efficiency of Play Types, Compared to League Average"
     )
 
-    # Colors
-    # point_color = "#FF8C00"
-    point_color = "#FF8200"
+    # --- Color mapping by play-type group ---
+    color_map = {
+        "Transition": "#EF426F",   # Pace and Space
+        "Spotup": "#EF426F",
+
+        "Iso": "#8A8D8F",          # One on One
+        "Postup": "#8A8D8F",
+
+        "Off-ball Screen": "#00B2A9",  # Player Movement
+        "Cut": "#00B2A9",
+
+        "Pick & Roll": "#FF8200",  # Ball Screen
+        "HandOff": "#FF8200",
+    }
+
+    df["color"] = df["play_type"].map(color_map).fillna("#FF8200")
+
     line_color = "#D3D3D3"
 
     fig = go.Figure()
 
-    # --- Horizontal reference line at y = 1 ---
-    fig.add_shape(
-        type="line",
-        x0=-0.5, x1=2.5,
-        y0=1, y1=1,
-        line=dict(color=line_color, width=1),
-        layer="below"
-    )
+    # --- Reference lines ---
+    fig.add_shape(type="line", x0=-0.5, x1=2.5, y0=1, y1=1,
+                  line=dict(color=line_color, width=1), layer="below")
+    fig.add_shape(type="line", x0=1, x1=1, y0=0.5, y1=1.5,
+                  line=dict(color=line_color, width=1), layer="below")
 
-    # --- Vertical reference line at x = 1 ---
-    fig.add_shape(
-        type="line",
-        x0=1, x1=1,
-        y0=0.5, y1=1.5,
-        line=dict(color=line_color, width=1),
-        layer="below"
-    )
-
-    # --- Scatter points with labels ---
+    # --- Scatter points ---
     fig.add_trace(go.Scatter(
         x=df["rel_poss_pct"],
         y=df["rel_ppp"],
         mode="markers+text",
-        marker=dict(size=14, color=point_color),
+        marker=dict(size=14, color=df["color"]),
         text=df["play_type"],
         textposition="top center",
-        name="Play Type",
+        textfont=dict(color=df["color"]),
         customdata=customdata,
         hovertemplate=(
             "<b>%{text}</b><br>"
             "Frequency: %{customdata[0]:+.0f}%<br>"
             "Efficiency: %{customdata[1]:+.0f}%<extra></extra>"
         )
-
-
-        ))
+    ))
 
     # --- Axes formatting ---
     fig.update_xaxes(
@@ -198,8 +200,8 @@ def pt_scatter_plotly(pt_chart_df):
     # --- Layout ---
     fig.update_layout(
         title=dict(text=title_var, font=dict(size=20)),
-        height=450,
-        margin=dict(l=60, r=40, t=60, b=60),
+        height=500,
+        margin=dict(l=60, r=60, t=60, b=120),  # extra bottom margin for legend
         showlegend=False
     )
 
@@ -207,9 +209,47 @@ def pt_scatter_plotly(pt_chart_df):
     fig.update_yaxes(tickfont=dict(size=18), titlefont=dict(size=18))
     fig.update_traces(textfont=dict(size=18))
 
+    # --- Custom Legend at Bottom-Left (Vertical) ---
+    legend_items = [
+        ("One on One", "#8A8D8F"),
+        ("Ball Screen", "#FF8200"),
+        ("Player Movement", "#00B2A9"),
+        ("Pace and Space", "#EF426F"),
+    ]
+
+    annotations = []
+    x_start = 0.16      # left side of the figure
+    y = -0.35
+    dx = 0.2     # horizontal spacing between boxes
+
+    for i, (label, color) in enumerate(legend_items):
+        x = x_start + i * dx
+
+        # Color square
+        annotations.append(dict(
+            x=x, y=y,
+            xref="paper", yref="paper",
+            xanchor="left",
+            showarrow=False,
+            text="■",
+            font=dict(size=20, color=color),
+        ))
+
+        # Label
+        annotations.append(dict(
+            x=x + 0.02, y=y + 0.01,
+            xref="paper", yref="paper",
+            xanchor="left",
+            showarrow=False,
+            text=label,
+            font=dict(size=16, color=color),
+        ))
+
+    fig.update_layout(annotations=annotations)
+
     return fig
 
-
+# this is the style scatter plot/bee swarm
 def style_scatter_plotly(style_df, selected_side, selected_id, name_dict):
     df = pd.DataFrame(style_df)
 
@@ -299,6 +339,7 @@ def style_scatter_plotly(style_df, selected_side, selected_id, name_dict):
 
     return fig
 
+# these are the shot location distribution bar charts
 def shot_bar_plotly(off_df, def_df, matchup_dict, team_dict, selected_side, freq=True):
 
         # --- Ordinal helper ---

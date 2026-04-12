@@ -6,7 +6,8 @@ import streamlit as st
 # get point diff
 def point_diff(x):
     if x['gameStatus']==1:
-        # if we don't have a spread value assume it's the average final point diff (sometimes that endpoint is wonky on which day it has)
+        # sometimes the odds endpoint can be a bit wonky and return data for the wrong day
+        # the backfill value is the average final point diff from last year
         if pd.isna(x['spread']) == True:
             return 12.7480
         else:
@@ -63,14 +64,21 @@ def game_flow(x):
     else:
         time_adj_factor = 2880/(2880-time_left)
 
-    if ((x['lead_changes'] + x['times_tied']) * time_adj_factor)> 21: # this would be around top 15% of games
+    # back and forth game - about top 15% of games
+    if ((x['lead_changes'] + x['times_tied']) * time_adj_factor)> 21:
         return 3
-    elif x['biggest_lead'] > 15 and x['diff'] < 7: # don't call it a comeback, around 10% of games
+
+    # (don't) call it a comeback - around 10% of games
+    elif x['biggest_lead'] > 15 and x['diff'] < 7: 
         return 2
+
+    # at least it's been fairly close the whole way - around 20% of games
     elif x['biggest_lead'] < 16: # around 20% of games
         return 1
+
+    # hasn't been close or a come back - around 50% of games
     else:
-        return 0 # around 50% of games
+        return 0
 
 # get team strength
 def team_strength(x):
@@ -187,6 +195,6 @@ def get_ratings(x, var_means, var_stds):
     # apply normalization to 0-10 scale
     # I don't have all of these data points for historical games, so unfortunately I can't calculate the observed min/max
     # instead, I will just tweak the min/max factors over time as need to try to keep game ratings within the range of 0-10
-    rating = (rating - -0.75) / (1 - -0.75)
+    rating = (rating - -1) / (1 - -1)
 
     return round(rating*10,1)

@@ -7,17 +7,24 @@ from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder, leaguedashte
 from util.helper import get_team_abbreviations, format_time, lower_all, get_team_abbreviations2, define_star
 import time
 
+########## live data ##########
+# these first four functions have five-minute caches and the cache is cleared by the refresh button
 
 # pull scoreboard from API
-@st.cache_data()
+@st.cache_data(ttl=300)
 def get_scoreboard():
+    # make API call
+    api_output = pd.json_normalize(scoreboard.ScoreBoard().get_dict()['scoreboard']['games'])
+    if api_output.empty:
+        return None
+
     # define columns to keep
     sb_keep_col = ['gameId', 'gameStatus', 'gameStatusText', 'gameEt',
        'homeTeam.teamId', 'homeTeam.teamTricode', 'homeTeam.teamName', 'homeTeam.wins', 'homeTeam.losses',
        'homeTeam.score', 'homeTeam.inBonus', 'homeTeam.timeoutsRemaining',
        'awayTeam.teamId','awayTeam.teamTricode', 'awayTeam.teamName', 'awayTeam.wins', 'awayTeam.losses',
        'awayTeam.score', 'awayTeam.inBonus','awayTeam.timeoutsRemaining']
-    scoreboard_raw_df = pd.json_normalize(scoreboard.ScoreBoard().get_dict()['scoreboard']['games'])[sb_keep_col]
+    scoreboard_raw_df =  api_output[sb_keep_col].copy()
 
     # calculate fields
     scoreboard_raw_df['diff'] = (scoreboard_raw_df['homeTeam.score'] - scoreboard_raw_df['awayTeam.score']).abs()
@@ -29,31 +36,83 @@ def get_scoreboard():
 
     return scoreboard_raw_df
 
+# get live box score
+@st.cache_data(ttl=300)
+def get_live_box_score(x):
+    game_id_list = []
+    biggest_lead_list = []
+    lead_changes_list = []
+    times_tied_list = []
+
+    for i, game_id in enumerate(x['gameId']):
+        # skip games that haven't started yet
+        if x['gameStatus'][i] == 1:
+            continue
+        else:
+            # get fields for game flow variable
+            game_id_list.append(game_id)
+            game_box = boxscore_obj = boxscore.BoxScore(game_id)
+            biggest_lead_list.append(max(game_box.get_dict()['game']['homeTeam']['statistics']['biggestLead'],
+                                            game_box.get_dict()['game']['awayTeam']['statistics']['biggestLead']))
+            lead_changes_list.append(game_box.get_dict()['game']['homeTeam']['statistics']['leadChanges'])
+            times_tied_list.append(game_box.get_dict()['game']['homeTeam']['statistics']['timesTied'])
+            time.sleep(1)
+
+    live_box_df = pd.DataFrame({'gameId':game_id_list,'biggest_lead':biggest_lead_list,'lead_changes':lead_changes_list,'times_tied':times_tied_list})
+
+    return live_box_df
+
+# injury report from basketball reference
+@st.cache_data(ttl=300)
+def get_injuries():
+    # get injury report
+    team_abbreviations = get_team_abbreviations()
+    inury_url = "https://www.basketball-reference.com/friv/injuries.fcgi"
+    injury_df = pd.read_html(inury_url)[0]
+    injury_df['design'] = injury_df['Description'].apply(lambda x: x.split(' (')[0])
+    injury_df['teamtricode'] = injury_df['Team'].apply(lambda x: team_abbreviations[x])
+
+    # only keep players who are confirmed out
+    injury_df = injury_df[(injury_df['design'] == 'Out')|(injury_df['design'] == 'Out For Season')]
+
+    # create list of missing players for each team
+    agg_df = injury_df.groupby(['teamtricode'])['Player'].unique().reset_index()
+    agg_df['injuries'] = agg_df['Player'].apply(lambda x: ', '.join(x))
+    return agg_df, injury_df
+
+# spread
+@st.cache_data(ttl=300)
+def get_spreads():
+    odds_df = pd.json_normalize(odds.Odds().get_dict()['games'])
+    return odds_df
+
+########## static data ##########
+# the remaining functions do not need to be refreshed more than once a day
+# they are cached and passed a parameter with today's date so that once the date changes the cache is cleared
+
 # rivalries from reddit survey
-# maybe just make this a dictionary to remove dependency to workbook?
 @st.cache_data()
-def get_rivalries():
-    rival_df = pd.read_excel('data\\Rivalries.xlsx',sheet_name=1)
+def get_rivalries(today_dt):
+    rival_df = pd.read_csv("data/rivalries.csv")
     return rival_df
 
 # league pass rankings
-# maybe just make this a dictionary to remove dependency to workbook?
 @st.cache_data()
-def get_lp_rankings():
-    lp_df = pd.read_excel('data\\League Pass Rankings.xlsx',sheet_name=0)
+def get_lp_rankings(today_dt):
+    lp_df = pd.read_csv("data/lp_rankings.csv")
     return lp_df
 
 # broadcast network
 @st.cache_data()
 def get_network(today):
-    bd_df = scoreboardv3.ScoreboardV3(today.strftime('%Y-%m-%d')).get_data_frames()[5]
+    bd_df = scoreboardv3.ScoreboardV3(today).get_data_frames()[5]
     nat_df = bd_df[bd_df['broadcasterType']=='nationalTv'].groupby('gameId')['broadcastDisplay'].unique().reset_index()
     nat_df['broadcastDisplay'] = nat_df['broadcastDisplay'].apply(lambda x: ', '.join(x))
     return nat_df
 
 # logo dictionary
 # consider saving the images to remove dependency?
-def get_logos():
+def get_logos(today_dt):
     # https://www.sportslogos.net/teams/list_by_league/6/National-Basketball-Association-Logos/NBA-Logos/
 
     logo_links = {
@@ -90,15 +149,9 @@ def get_logos():
     }
     return logo_links
 
-# spread
-@st.cache_data()
-def get_spreads():
-    odds_df = pd.json_normalize(odds.Odds().get_dict()['games'])
-    return odds_df
-
 # calculate number of days of rest
 @st.cache_data()
-def get_rest():
+def get_rest(today_dt):
     # games
     games_df = leaguegamefinder.LeagueGameFinder(season_nullable='2025-26', season_type_nullable='Regular Season',league_id_nullable='00').get_data_frames()[0]
     games_df.columns = lower_all(games_df)
@@ -113,53 +166,9 @@ def get_rest():
     latest_games['rest'] = (today_norm - latest_games['game_date']).dt.days - 1
     return latest_games
 
-# injury report from basketball reference
-@st.cache_data()
-def get_injuries():
-    # get injury report
-    team_abbreviations = get_team_abbreviations()
-    inury_url = "https://www.basketball-reference.com/friv/injuries.fcgi"
-    injury_df = pd.read_html(inury_url)[0]
-    injury_df['design'] = injury_df['Description'].apply(lambda x: x.split(' (')[0])
-    injury_df['teamtricode'] = injury_df['Team'].apply(lambda x: team_abbreviations[x])
-
-    # only keep players who are confirmed out
-    injury_df = injury_df[(injury_df['design'] == 'Out')|(injury_df['design'] == 'Out For Season')]
-
-    # create list of missing players for each team
-    agg_df = injury_df.groupby(['teamtricode'])['Player'].unique().reset_index()
-    agg_df['injuries'] = agg_df['Player'].apply(lambda x: ', '.join(x))
-    return agg_df, injury_df
-
-# get live box score
-@st.cache_data()
-def get_live_box_score(x):
-    game_id_list = []
-    biggest_lead_list = []
-    lead_changes_list = []
-    times_tied_list = []
-
-    for i, game_id in enumerate(x['gameId']):
-        # skip games that haven't started yet
-        if x['gameStatus'][i] == 1:
-            continue
-        else:
-            # get fields for game flow variable
-            game_id_list.append(game_id)
-            game_box = boxscore_obj = boxscore.BoxScore(game_id)
-            biggest_lead_list.append(max(game_box.get_dict()['game']['homeTeam']['statistics']['biggestLead'],
-                                            game_box.get_dict()['game']['awayTeam']['statistics']['biggestLead']))
-            lead_changes_list.append(game_box.get_dict()['game']['homeTeam']['statistics']['leadChanges'])
-            times_tied_list.append(game_box.get_dict()['game']['homeTeam']['statistics']['timesTied'])
-            time.sleep(1)
-
-    live_box_df = pd.DataFrame({'gameId':game_id_list,'biggest_lead':biggest_lead_list,'lead_changes':lead_changes_list,'times_tied':times_tied_list})
-
-    return live_box_df
-
 # get vorp to calculate value of injured players
 @st.cache_data()
-def get_vorp(stat_year):
+def get_vorp(stat_year, today_dt):
     url = "https://www.basketball-reference.com/leagues/NBA_" + str(stat_year) + "_advanced.html"
     df = pd.read_html(url)[0]
     df_agg = df.groupby('Player').agg({'VORP':'mean'}).reset_index()
@@ -167,7 +176,7 @@ def get_vorp(stat_year):
 
 # get award data for star power
 @st.cache_data()
-def get_award_data(year, current=False):
+def get_award_data(year, today_dt, current=False):
     url = "https://www.basketball-reference.com/leagues/NBA_" + str(year) + "_advanced.html"
     player_df = pd.read_html(url)[0]
     if current == False:
@@ -178,22 +187,21 @@ def get_award_data(year, current=False):
 
 # get stars
 @st.cache_data()
-def get_stars():
+def get_stars(today_dt):
     # get team abbreviations
     team_abbreviations2 = get_team_abbreviations2()
 
-
     # get last three years of data
-    df23 = get_award_data(2023)
-    df24 = get_award_data(2024)
-    df25 = get_award_data(2025)
+    df23 = get_award_data(2023, today_dt)
+    df24 = get_award_data(2024, today_dt)
+    df25 = get_award_data(2025, today_dt)
     combined_df = pd.concat([df23,df24,df25],axis=0)
 
     # make a unique list of stars
     star_set = set(combined_df[combined_df['star_ind']==1]['Player'])
 
     # get 26 players
-    df26 = get_award_data(2026, current=True)
+    df26 = get_award_data(2026, today_dt, current=True)
 
     # bring in team tri code
     df26['teamtricode'] = df26['Team'].apply(lambda x: team_abbreviations2[x])
@@ -212,7 +220,7 @@ def get_stars():
 
 # get foul data
 @st.cache_data()
-def get_fouls():
+def get_fouls(today_dt):
 
     # committed
     foul_df = leaguedashteamstats.LeagueDashTeamStats(per_mode_detailed='PerGame').get_data_frames()[0]
@@ -228,14 +236,14 @@ def get_fouls():
 
 # advanced team stats
 @st.cache_data()
-def get_team_adv():
+def get_team_adv(today_dt):
     adv_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Advanced').get_data_frames()[0]
     adv_df.columns = lower_all(adv_df)
     return adv_df
 
 # four factor team stats
 @st.cache_data()
-def get_team_four():
+def get_team_four(today_dt):
     four_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Four Factors').get_data_frames()[0]
     four_df.columns = lower_all(four_df)
     return four_df
@@ -306,7 +314,7 @@ def get_ff_chart_data(sb_df, adv_df, four_df):
 
 # play type data
 @st.cache_data()
-def get_team_play_type():
+def get_team_play_type(today_dt):
     
     # api response
     # unfortunately each play type requires its own API call
@@ -371,21 +379,21 @@ def get_team_play_type():
 
 # player tracking distance
 @st.cache_data()
-def get_team_pt_dist():
+def get_team_pt_dist(today_dt):
     pm_df = leaguedashptstats.LeagueDashPtStats().get_data_frames()[0]
     pm_df.columns = lower_all(pm_df)
     return pm_df
 
 # player tracking passes
 @st.cache_data()
-def get_team_pt_pass():
+def get_team_pt_pass(today_dt):
     pass_df = leaguedashptstats.LeagueDashPtStats(pt_measure_type='Passing').get_data_frames()[0]
     pass_df.columns = lower_all(pass_df)
     return pass_df
 
 # FG concentration
 @st.cache_data()
-def get_team_fg_con_df():
+def get_team_fg_con_df(today_dt):
     player_df = leaguedashplayerstats.LeagueDashPlayerStats().get_data_frames()[0]
     player_df.columns = lower_all(player_df)
     fg_con_df = player_df.groupby('team_id').agg({'fga':['max','sum']}).reset_index()
@@ -422,7 +430,7 @@ def get_style_chart_data(adv_df, pm_df, pass_df, fg_con_df, play_div_df):
 
 # shot chart data
 @st.cache_data()
-def get_shot_data():
+def get_shot_data(today_dt):
     # get data
     shot_df = leaguedashteamshotlocations.LeagueDashTeamShotLocations().get_data_frames()[0]
     opp_shot_df = leaguedashteamshotlocations.LeagueDashTeamShotLocations(measure_type_simple='Opponent').get_data_frames()[0]

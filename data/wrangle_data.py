@@ -12,30 +12,41 @@ import numpy as np
 # it supplies that data back to the main python script which will pass it to the UI script to render the page
 
 def combine_data():
+    # get date
     today = get_today()
+    today_dt = today.strftime('%Y-%m-%d')
+
+    ########## live data ##########
     scoreboard_raw_df = get_scoreboard()
-    rival_df = get_rivalries()
-    lp_df = get_lp_rankings()
-    nat_df = get_network(today)
-    logo_links = get_logos()
-    odds_df = get_spreads()
-    latest_games = get_rest()
-    injury_agg_df, injury_full_df = get_injuries()
+
+    # check to see if htere are games today
+    if scoreboard_raw_df is None:
+        return {"no_games": True}
+    
     live_box_df = get_live_box_score(scoreboard_raw_df)
-    vorp_df_25 = get_vorp(2025)
-    adv_df = get_team_adv()
-    four_df = get_team_four()
-    ff_chart_df = get_ff_chart_data(scoreboard_raw_df, adv_df, four_df)
-    star_df = get_stars()
-    foul_df = get_fouls()
+    injury_agg_df, injury_full_df = get_injuries()
+    odds_df = get_spreads()
+
+    ########## static data ##########
+    rival_df = get_rivalries(today_dt)
+    lp_df = get_lp_rankings(today_dt)
+    nat_df = get_network(today_dt)
+    logo_links = get_logos(today_dt)
+    latest_games = get_rest(today_dt)
+    vorp_df_25 = get_vorp(2025, today_dt)
+    adv_df = get_team_adv(today_dt)
+    four_df = get_team_four(today_dt)
+    ff_df = get_ff_chart_data(scoreboard_raw_df, adv_df, four_df)
+    star_df = get_stars(today_dt)
+    foul_df = get_fouls(today_dt)
     name_dict = dict(zip(list(foul_df['team_id']),list(foul_df['team_name'])))
-    pm_df = get_team_pt_dist()
-    pass_df = get_team_pt_pass()
-    fg_con_df = get_team_fg_con_df()
-    pt_df = get_team_play_type()
+    pm_df = get_team_pt_dist(today_dt)
+    pass_df = get_team_pt_pass(today_dt)
+    fg_con_df = get_team_fg_con_df(today_dt)
+    pt_df = get_team_play_type(today_dt)
     play_div_df = pt_df.groupby('team_id')['play_var'].sum().reset_index()
     style_df_wide, style_df = get_style_chart_data(adv_df, pm_df, pass_df, fg_con_df, play_div_df)
-    shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long = get_shot_data()
+    shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long = get_shot_data(today_dt)
 
     # merge rival
     scoreboard_raw_df['rivalry'] = scoreboard_raw_df['team_combo'].apply(lambda x: 1 if int(x) in list(rival_df['key'].values) else 0)
@@ -98,8 +109,8 @@ def combine_data():
 
     # style contrasts
 
-    ff_chart_df['contrast'] = ff_chart_df.apply(get_contrast,axis=1)
-    ff_chart_agg = ff_chart_df.groupby('game_name')['contrast'].max().reset_index()
+    ff_df['contrast'] = ff_df.apply(get_contrast,axis=1)
+    ff_chart_agg = ff_df.groupby('game_name')['contrast'].max().reset_index()
     
     scoreboard_raw_df = scoreboard_raw_df.merge(ff_chart_agg,how='left',on='game_name')
 
@@ -173,5 +184,22 @@ def combine_data():
     finished_df.columns = ['Away','Home','Game Rating','Rivalry','Away ','Home ','Network',\
                         'Away W82','Home W82','Injuries Away','Injuries Home']
 
-    return today, live_df, upcoming_df, finished_df, scoreboard_raw_df,\
-           ff_chart_df, style_df, pt_df, shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long, name_dict
+    # return today, live_df, upcoming_df, finished_df, scoreboard_raw_df,\
+    #        ff_df, style_df, pt_df, shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long, name_dict
+
+    return {
+        "no_games": False,
+        "today": today,
+        "live_df": live_df,
+        "upcoming_df": upcoming_df,
+        "finished_df": finished_df,
+        "scoreboard_raw_df": scoreboard_raw_df,
+        "ff_df": ff_df,
+        "style_df": style_df,
+        "pt_df": pt_df,
+        "shot_freq_df_long": shot_freq_df_long,
+        "shot_pct_df_long": shot_pct_df_long,
+        "opp_freq_df_long": opp_freq_df_long,
+        "opp_pct_df_long": opp_pct_df_long,
+        "name_dict": name_dict
+    }

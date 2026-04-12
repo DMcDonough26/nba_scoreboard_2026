@@ -2,26 +2,46 @@
 # load packages
 import streamlit as st
 from util.helper import get_today
-from data.get_data import get_scoreboard, get_injuries
+from data.get_data import get_scoreboard, get_injuries, get_live_box_score
 from ratings.ratings import get_ratings
 from charts.charts import lollipop_chart_plotly, pt_scatter_plotly, style_scatter_plotly, shot_bar_plotly
 import seaborn as sns
 import matplotlib.colors as mcolors
+from datetime import datetime, timedelta
+
 
 # creating the page first, so that I can then start catching functions
-# moved the weights up this function to help with caching later on
+# moved the weights up to this function to help with caching later on
 def create_page():
     st.set_page_config(layout="wide")
+
+    # time stamp
     today = get_today()
     st.title("NBA Scoreboard:"+" "+today.strftime("%m/%d/%Y"))
     st.write("Scores as of: ", today.strftime('%#I:%M:%p'))
 
-    # timestamp, scoreboard, and injury report are updated on refresh 
+    # set guardrail to avoid users spamming refresh button
+    now = datetime.now()
+    COOLDOWN = timedelta(seconds=30)
+
+    if "last_refresh" not in st.session_state:
+        st.session_state.last_refresh = datetime.min
+
+    # create refresh button
     if st.button("Refresh"):
-        get_today.clear()
-        get_scoreboard.clear()
-        get_injuries.clear()
-        st.rerun()
+        if (now - st.session_state.last_refresh) < COOLDOWN:
+            st.warning("\*In my most Johnny Tran voice* Too soon, Junior 🙅‍♂️. Please allow ~30 seconds in between refreshes.")
+        
+        # clear cache on the live data elements (time stamp, scoreboard, injuries, live box score, odds)
+        else:
+            st.session_state.refresh_warning = False
+            st.session_state.last_refresh = now
+            get_today.clear()
+            get_scoreboard.clear()
+            get_injuries.clear()
+            get_live_box_score.clear()
+            get_spreads.clear()
+            st.rerun()
 
     # four major categories for game ratings, with default weights adding to 100%
     st.write("Select weights for game rating categories:")
@@ -115,12 +135,7 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
                 shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long, name_dict):
 
     # choose color for game rating
-    # ORANGE = "#FF8C00"
-    # LIGHT_ORANGE = "#FFB366"
-    # TEAL = "#007A7A"
-    # LIGHT_TEAL = "#66D1C7"
     # color_choice = "#00B2A9"
-
 
     # One‑color lighter teal gradient
     # cmap = sns.light_palette(color_choice, as_cmap=True)
@@ -132,8 +147,6 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
     "custom_div", [color1, mid, color2]
     )
     
-
-
     # Round rating to one decimal (numeric)
     live_df["Game Rating"] = live_df["Game Rating"].astype(float).round(1)
     upcoming_df["Game Rating"] = upcoming_df["Game Rating"].astype(float).round(1)
@@ -143,26 +156,24 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
     live_styled = (
         live_df.style
             .set_properties(subset=["Rivalry"], **{"font-size": "22px"})
-            .format({"Game Rating": "{:.1f}"})   # <-- THIS fixes the display
+            .format({"Game Rating": "{:.1f}"}) 
             .background_gradient(cmap=cmap, subset=["Game Rating"],vmin=0,vmax=10)
     )
 
     upcoming_styled = (
         upcoming_df.style
-            .format({"Game Rating": "{:.1f}","Spread": "{:.1f}"})   # <-- THIS fixes the display
+            .format({"Game Rating": "{:.1f}","Spread": "{:.1f}"})
             .background_gradient(cmap=cmap, subset=["Game Rating"],vmin=0,vmax=10)
     )
 
     finished_styled = (
         finished_df.style
-            .format({"Game Rating": "{:.1f}"})   # <-- THIS fixes the display
+            .format({"Game Rating": "{:.1f}"})
             .background_gradient(cmap=cmap, subset=["Game Rating"],vmin=0,vmax=10)
     )
 
     # Create the tabs for the scoreboards
     tab1, tab2, tab3 = st.tabs(['Live Games', 'Upcoming', 'Finished Games'])
-
-
 
     with tab1:
         st.dataframe(
@@ -225,7 +236,6 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
 
     # create the tabs for the what-to-watch charts
     tab4, tab5, tab6, tab7 = st.tabs(['Four Factors', 'Style', 'Play Types', 'Shot Chart'])    
-
 
     with tab4:
         ff_chart_df = ff_df[(ff_df['game_name']==selected_game)&(ff_df['offense']==team_dict[selected_side])]

@@ -7,7 +7,7 @@ import base64
 import requests
 
 # get today
-@st.cache_data()
+@st.cache_data(ttl=300)
 def get_today():
     today = datetime.today()
     return today
