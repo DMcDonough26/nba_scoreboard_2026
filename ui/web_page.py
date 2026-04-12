@@ -8,6 +8,7 @@ from charts.charts import lollipop_chart_plotly, pt_scatter_plotly, style_scatte
 import seaborn as sns
 import matplotlib.colors as mcolors
 from datetime import datetime, timedelta
+import pytz
 
 
 # creating the page first, so that I can then start catching functions
@@ -18,10 +19,11 @@ def create_page():
     # time stamp
     today = get_today()
     st.title("NBA Scoreboard:"+" "+today.strftime("%m/%d/%Y"))
-    st.write("Scores as of: ", today.strftime('%#I:%M:%p'))
+    st.write("Scores as of: ", today.strftime('%#I:%M:%p'), " ET")
 
     # set guardrail to avoid users spamming refresh button
-    now = datetime.now()
+    eastern = pytz.timezone("America/New_York")
+    now = datetime.now(eastern)
     COOLDOWN = timedelta(seconds=30)
 
     if "last_refresh" not in st.session_state:

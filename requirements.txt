@@ -4,6 +4,8 @@ requests
 
 pandas
 numpy
+lxml
+pytz
 
 nba_api
 

@@ -157,13 +157,8 @@ def combine_data():
 
     # split into sections
     upcoming_raw_df = scoreboard_raw_df[scoreboard_raw_df['gameStatus']==1].copy()
-    # upcoming_raw_df['tipoff'] = pd.to_datetime(upcoming_raw_df['gameEt']).dt.time.apply(lambda x: x.strftime('%#I:%M:%p')) # differing formats requires repeating this code for each df
-
     live_raw_df = scoreboard_raw_df[scoreboard_raw_df['gameStatus']==2].copy()
-    # live_raw_df['tipoff'] = pd.to_datetime(live_raw_df['gameEt']).dt.time.apply(lambda x: x.strftime('%#I:%M:%p'))
-
     finished_raw_df = scoreboard_raw_df[scoreboard_raw_df['gameStatus']==3].copy()
-    # finished_raw_df['tipoff'] = pd.to_datetime(finished_raw_df['gameEt']).dt.time.apply(lambda x: x.strftime('%#I:%M:%p'))
 
     # create final dataframes (select and rename relevant columns)
     live_df = live_raw_df[['away_logo','home_logo','game_rating','riv_disp','gameStatusText','awayTeam.score','homeTeam.score','broadcastDisplay',\

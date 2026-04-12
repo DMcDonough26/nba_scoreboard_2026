@@ -5,12 +5,15 @@ from datetime import datetime
 import pandas as pd
 import base64
 import requests
+import pytz
+
 
 # get today
 @st.cache_data(ttl=300)
 def get_today():
-    today = datetime.today()
-    return today
+    eastern = pytz.timezone("America/New_York")
+    return datetime.now(eastern)
+
 
 # format time (passing as apply function this way because row by row formatting differs)
 def format_time(x):
