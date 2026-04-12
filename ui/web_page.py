@@ -5,7 +5,7 @@ from util.helper import get_today
 from data.get_data import get_scoreboard, get_injuries, get_live_box_score
 from ratings.ratings import get_ratings
 from charts.charts import lollipop_chart_plotly, pt_scatter_plotly, style_scatter_plotly, shot_bar_plotly
-import seaborn as sns
+# import seaborn as sns
 import matplotlib.colors as mcolors
 from datetime import datetime, timedelta
 import pytz
