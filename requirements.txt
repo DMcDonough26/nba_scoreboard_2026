@@ -1,12 +1,9 @@
 streamlit
 streamlit_autorefresh
-base64
 requests
 
 pandas
 numpy
-datetime
-time
 
 nba_api
 
