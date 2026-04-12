@@ -4,7 +4,7 @@ import streamlit as st
 import pandas as pd
 from nba_api.live.nba.endpoints import scoreboard, odds, boxscore
 from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder, leaguedashteamstats, synergyplaytypes, leaguedashptstats, leaguedashplayerstats, leaguedashteamshotlocations
-from util.helper import get_team_abbreviations, format_time, lower_all, get_team_abbreviations2, define_star
+from util.helper import get_team_abbreviations, format_time, lower_all, get_team_abbreviations2, define_star, APIFailure
 import time
 
 ########## live data ##########
@@ -14,7 +14,10 @@ import time
 @st.cache_data(ttl=300)
 def get_scoreboard():
     # make API call
-    api_output = pd.json_normalize(scoreboard.ScoreBoard().get_dict()['scoreboard']['games'])
+    try:
+        api_output = pd.json_normalize(scoreboard.ScoreBoard().get_dict()['scoreboard']['games'])
+    except Exception:
+        raise APIFailure("Live Scoreboard API failed") 
     if api_output.empty:
         return None
 
@@ -51,7 +54,10 @@ def get_live_box_score(x):
         else:
             # get fields for game flow variable
             game_id_list.append(game_id)
-            game_box = boxscore_obj = boxscore.BoxScore(game_id)
+            try:
+                game_box = boxscore_obj = boxscore.BoxScore(game_id)
+            except Exception:
+                raise APIFailure("Live Box Score API failed")
             biggest_lead_list.append(max(game_box.get_dict()['game']['homeTeam']['statistics']['biggestLead'],
                                             game_box.get_dict()['game']['awayTeam']['statistics']['biggestLead']))
             lead_changes_list.append(game_box.get_dict()['game']['homeTeam']['statistics']['leadChanges'])
@@ -83,7 +89,10 @@ def get_injuries():
 # spread
 @st.cache_data(ttl=300)
 def get_spreads():
-    odds_df = pd.json_normalize(odds.Odds().get_dict()['games'])
+    try:
+        odds_df = pd.json_normalize(odds.Odds().get_dict()['games'])
+    except Exception:
+        raise APIFailure("Odds API failed")
     return odds_df
 
 ########## static data ##########
@@ -105,7 +114,10 @@ def get_lp_rankings(today_dt):
 # broadcast network
 @st.cache_data()
 def get_network(today):
-    bd_df = scoreboardv3.ScoreboardV3(today).get_data_frames()[5]
+    try:
+        bd_df = scoreboardv3.ScoreboardV3(today).get_data_frames()[5]
+    except Exception:
+        raise APIFailure("Static Scoreboard API failed")
     nat_df = bd_df[bd_df['broadcasterType']=='nationalTv'].groupby('gameId')['broadcastDisplay'].unique().reset_index()
     nat_df['broadcastDisplay'] = nat_df['broadcastDisplay'].apply(lambda x: ', '.join(x))
     return nat_df
@@ -153,7 +165,10 @@ def get_logos(today_dt):
 @st.cache_data()
 def get_rest(today_dt):
     # games
-    games_df = leaguegamefinder.LeagueGameFinder(season_nullable='2025-26', season_type_nullable='Regular Season',league_id_nullable='00').get_data_frames()[0]
+    try:
+        games_df = leaguegamefinder.LeagueGameFinder(season_nullable='2025-26', season_type_nullable='Regular Season',league_id_nullable='00').get_data_frames()[0]
+    except Exception:
+        raise APIFailure("Rest API failed")
     games_df.columns = lower_all(games_df)
     games_df['game_date'] =  pd.to_datetime(games_df['game_date'])
     today_norm = pd.Timestamp('today').normalize()
@@ -222,12 +237,14 @@ def get_stars(today_dt):
 @st.cache_data()
 def get_fouls(today_dt):
 
-    # committed
-    foul_df = leaguedashteamstats.LeagueDashTeamStats(per_mode_detailed='PerGame').get_data_frames()[0]
-    
-    # drawn
-    opp_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Opponent',per_mode_detailed='PerGame').get_data_frames()[0]
-    
+    try:
+        # committed
+        foul_df = leaguedashteamstats.LeagueDashTeamStats(per_mode_detailed='PerGame').get_data_frames()[0]    
+        # drawn
+        opp_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Opponent',per_mode_detailed='PerGame').get_data_frames()[0]
+    except Exception:
+        raise APIFailure("Foul API failed")        
+
     # combined
     combined_df = foul_df[['TEAM_ID','TEAM_NAME','PF']].merge(opp_df[['TEAM_ID','OPP_PF']],how='left',on='TEAM_ID')
     combined_df['total_fouls'] = combined_df['PF'] + combined_df['OPP_PF']
@@ -237,14 +254,20 @@ def get_fouls(today_dt):
 # advanced team stats
 @st.cache_data()
 def get_team_adv(today_dt):
-    adv_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Advanced').get_data_frames()[0]
+    try:
+        adv_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Advanced').get_data_frames()[0]
+    except Exception:
+        raise APIFailure("Advanced API failed")    
     adv_df.columns = lower_all(adv_df)
     return adv_df
 
 # four factor team stats
 @st.cache_data()
 def get_team_four(today_dt):
-    four_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Four Factors').get_data_frames()[0]
+    try:
+        four_df = leaguedashteamstats.LeagueDashTeamStats(measure_type_detailed_defense='Four Factors').get_data_frames()[0]
+    except Exception:
+        raise APIFailure("Four Factor API failed")    
     four_df.columns = lower_all(four_df)
     return four_df
 
@@ -318,23 +341,26 @@ def get_team_play_type(today_dt):
     
     # api response
     # unfortunately each play type requires its own API call
-    iso = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Isolation',type_grouping_nullable='Offensive')
-    time.sleep(1)
-    trans = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Transition',type_grouping_nullable='Offensive')
-    time.sleep(1)
-    pnrb = synergyplaytypes.SynergyPlayTypes(play_type_nullable='PRBallHandler',type_grouping_nullable='Offensive')
-    time.sleep(1)
-    pnrr = synergyplaytypes.SynergyPlayTypes(play_type_nullable='PRRollMan',type_grouping_nullable='Offensive')
-    time.sleep(1)
-    post = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Postup',type_grouping_nullable='Offensive')
-    time.sleep(1)
-    spot = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Spotup',type_grouping_nullable='Offensive')
-    time.sleep(1)
-    hand = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Handoff',type_grouping_nullable='Offensive')
-    time.sleep(1)
-    cut = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Cut',type_grouping_nullable='Offensive')
-    time.sleep(1)
-    os = synergyplaytypes.SynergyPlayTypes(play_type_nullable='OffScreen',type_grouping_nullable='Offensive')
+    try:
+        iso = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Isolation',type_grouping_nullable='Offensive')
+        time.sleep(2)
+        trans = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Transition',type_grouping_nullable='Offensive')
+        time.sleep(2)
+        pnrb = synergyplaytypes.SynergyPlayTypes(play_type_nullable='PRBallHandler',type_grouping_nullable='Offensive')
+        time.sleep(2)
+        pnrr = synergyplaytypes.SynergyPlayTypes(play_type_nullable='PRRollMan',type_grouping_nullable='Offensive')
+        time.sleep(2)
+        post = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Postup',type_grouping_nullable='Offensive')
+        time.sleep(2)
+        spot = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Spotup',type_grouping_nullable='Offensive')
+        time.sleep(2)
+        hand = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Handoff',type_grouping_nullable='Offensive')
+        time.sleep(2)
+        cut = synergyplaytypes.SynergyPlayTypes(play_type_nullable='Cut',type_grouping_nullable='Offensive')
+        time.sleep(2)
+        os = synergyplaytypes.SynergyPlayTypes(play_type_nullable='OffScreen',type_grouping_nullable='Offensive')
+    except Exception:
+        raise APIFailure("Play Type API failed")    
 
     # removed play types that are more about how the ball went in and less about what was run
     # time.sleep(1)
@@ -380,21 +406,30 @@ def get_team_play_type(today_dt):
 # player tracking distance
 @st.cache_data()
 def get_team_pt_dist(today_dt):
-    pm_df = leaguedashptstats.LeagueDashPtStats().get_data_frames()[0]
+    try:
+        pm_df = leaguedashptstats.LeagueDashPtStats().get_data_frames()[0]
+    except Exception:
+        raise APIFailure("Player Distance API failed")    
     pm_df.columns = lower_all(pm_df)
     return pm_df
 
 # player tracking passes
 @st.cache_data()
 def get_team_pt_pass(today_dt):
-    pass_df = leaguedashptstats.LeagueDashPtStats(pt_measure_type='Passing').get_data_frames()[0]
+    try:
+        pass_df = leaguedashptstats.LeagueDashPtStats(pt_measure_type='Passing').get_data_frames()[0]
+    except Exception:
+        raise APIFailure("Player Passing API failed")    
     pass_df.columns = lower_all(pass_df)
     return pass_df
 
 # FG concentration
 @st.cache_data()
 def get_team_fg_con_df(today_dt):
-    player_df = leaguedashplayerstats.LeagueDashPlayerStats().get_data_frames()[0]
+    try:
+        player_df = leaguedashplayerstats.LeagueDashPlayerStats().get_data_frames()[0]
+    except Exception:
+        raise APIFailure("Field Goal API failed")    
     player_df.columns = lower_all(player_df)
     fg_con_df = player_df.groupby('team_id').agg({'fga':['max','sum']}).reset_index()
     fg_con_df.columns = ['team_id','max','sum']
@@ -431,9 +466,12 @@ def get_style_chart_data(adv_df, pm_df, pass_df, fg_con_df, play_div_df):
 # shot chart data
 @st.cache_data()
 def get_shot_data(today_dt):
-    # get data
-    shot_df = leaguedashteamshotlocations.LeagueDashTeamShotLocations().get_data_frames()[0]
-    opp_shot_df = leaguedashteamshotlocations.LeagueDashTeamShotLocations(measure_type_simple='Opponent').get_data_frames()[0]
+    try:
+        # get data
+        shot_df = leaguedashteamshotlocations.LeagueDashTeamShotLocations().get_data_frames()[0]
+        opp_shot_df = leaguedashteamshotlocations.LeagueDashTeamShotLocations(measure_type_simple='Opponent').get_data_frames()[0]
+    except Exception:
+        raise APIFailure("Shot API failed")    
 
     # flatten column index
     shot_df.columns = ['_'.join(col) for col in shot_df.columns.values]

@@ -205,8 +205,8 @@ def pt_scatter_plotly(pt_chart_df):
         showlegend=False
     )
 
-    fig.update_xaxes(tickfont=dict(size=18), titlefont=dict(size=18))
-    fig.update_yaxes(tickfont=dict(size=18), titlefont=dict(size=18))
+    fig.update_xaxes(tickfont=dict(size=18), title=dict(font=dict(size=18)))
+    fig.update_yaxes(tickfont=dict(size=18), title=dict(font=dict(size=18)))
     fig.update_traces(textfont=dict(size=18))
 
     # --- Custom Legend at Bottom-Left (Vertical) ---
@@ -326,7 +326,7 @@ def style_scatter_plotly(style_df, selected_side, selected_id, name_dict):
     # --- Axes ---
     fig.update_xaxes(
         tickfont=dict(size=18),
-        titlefont=dict(size=18),
+        title=dict(font=dict(size=18)),
         showgrid=False
     )
 

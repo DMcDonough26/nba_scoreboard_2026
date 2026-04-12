@@ -7,6 +7,7 @@ from data.get_data import get_scoreboard, get_rivalries, get_lp_rankings, get_ne
                           get_team_play_type, get_shot_data, get_team_four, get_team_pt_dist, get_team_pt_pass, get_team_fg_con_df
 from ratings.ratings import get_ratings
 import numpy as np
+import time
 
 # this script has a single function that gets all of the data needed from get_data
 # it supplies that data back to the main python script which will pass it to the UI script to render the page
@@ -18,32 +19,44 @@ def combine_data():
 
     ########## live data ##########
     scoreboard_raw_df = get_scoreboard()
+    time.sleep(2)
 
     # check to see if htere are games today
     if scoreboard_raw_df is None:
         return {"no_games": True}
     
     live_box_df = get_live_box_score(scoreboard_raw_df)
+    time.sleep(2)
     injury_agg_df, injury_full_df = get_injuries()
     odds_df = get_spreads()
+    time.sleep(2)
 
     ########## static data ##########
     rival_df = get_rivalries(today_dt)
     lp_df = get_lp_rankings(today_dt)
     nat_df = get_network(today_dt)
+    time.sleep(2)
     logo_links = get_logos(today_dt)
     latest_games = get_rest(today_dt)
+    time.sleep(2)
     vorp_df_25 = get_vorp(2025, today_dt)
     adv_df = get_team_adv(today_dt)
+    time.sleep(2)
     four_df = get_team_four(today_dt)
+    time.sleep(2)
     ff_df = get_ff_chart_data(scoreboard_raw_df, adv_df, four_df)
     star_df = get_stars(today_dt)
     foul_df = get_fouls(today_dt)
+    time.sleep(2)
     name_dict = dict(zip(list(foul_df['team_id']),list(foul_df['team_name'])))
     pm_df = get_team_pt_dist(today_dt)
+    time.sleep(2)
     pass_df = get_team_pt_pass(today_dt)
+    time.sleep(2)
     fg_con_df = get_team_fg_con_df(today_dt)
+    time.sleep(2)
     pt_df = get_team_play_type(today_dt)
+    time.sleep(2)
     play_div_df = pt_df.groupby('team_id')['play_var'].sum().reset_index()
     style_df_wide, style_df = get_style_chart_data(adv_df, pm_df, pass_df, fg_con_df, play_div_df)
     shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long = get_shot_data(today_dt)

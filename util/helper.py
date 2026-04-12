@@ -120,3 +120,7 @@ def url_to_data_url(url: str) -> str:
         r = requests.get(url)
         b64 = base64.b64encode(r.content).decode("utf-8")
         return f"data:image/png;base64,{b64}"
+
+
+class APIFailure(Exception):
+    pass
