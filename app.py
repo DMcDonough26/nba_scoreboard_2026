@@ -13,7 +13,9 @@ from data.wrangle_data import combine_data
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
+# testing
 import inspect
+import ratings.calculate_ratings as ratings
 
 
 
