@@ -23,6 +23,7 @@ def main():
 
     st.write("RATINGS MODULE:", ratings)
     st.write("RATINGS FILE:", inspect.getfile(ratings))
+    st.write("DEPLOY VERSION:", "2026-04-12-20:16")
 
 
     # exception handling is added for days when there are no NBA games
