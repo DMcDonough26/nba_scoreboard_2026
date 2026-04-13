@@ -168,6 +168,10 @@ def combine_data():
     scoreboard_raw_df['min_rest'] = scoreboard_raw_df[['rest_away','rest_home']].min(axis=1)
     scoreboard_raw_df["riv_disp"] = np.where(scoreboard_raw_df['rivalry'] == 1, "🔥", "")
 
+        #### testing cloud deployment ####
+    st.dataframe(scoreboard_raw_df)
+    ##################################
+
     # split into sections
     upcoming_raw_df = scoreboard_raw_df[scoreboard_raw_df['gameStatus']==1].copy()
     live_raw_df = scoreboard_raw_df[scoreboard_raw_df['gameStatus']==2].copy()
