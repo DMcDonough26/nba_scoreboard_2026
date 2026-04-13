@@ -13,20 +13,10 @@ from data.wrangle_data import combine_data
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
-# testing
-import inspect
-import ratings.calculate_ratings as ratings
-
-
 
 def main():
     # create the page first, so you can start caching functions
     create_page()
-
-    st.write("RATINGS MODULE:", ratings)
-    st.write("RATINGS FILE:", inspect.getfile(ratings))
-    st.write("DEPLOY VERSION:", "2026-04-12-20:16")
-
 
     # exception handling is added for days when there are no NBA games
     try:
