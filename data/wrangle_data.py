@@ -5,7 +5,7 @@ from util.helper import get_today, get_contrast, url_to_data_url
 from data.get_data import get_scoreboard, get_rivalries, get_lp_rankings, get_network, get_logos, get_spreads, get_rest, get_injuries,\
                           get_live_box_score, get_vorp, get_team_adv, get_ff_chart_data, get_stars, get_fouls, get_style_chart_data,\
                           get_team_play_type, get_shot_data, get_team_four, get_team_pt_dist, get_team_pt_pass, get_team_fg_con_df
-from ratings.ratings import get_ratings
+from ratings.calculate_ratings import get_ratings
 import numpy as np
 import time
 
@@ -168,7 +168,7 @@ def combine_data():
     scoreboard_raw_df['min_rest'] = scoreboard_raw_df[['rest_away','rest_home']].min(axis=1)
     scoreboard_raw_df["riv_disp"] = np.where(scoreboard_raw_df['rivalry'] == 1, "🔥", "")
 
-        #### testing cloud deployment ####
+    #### testing cloud deployment ####
     st.dataframe(scoreboard_raw_df)
     ##################################
 

@@ -7,17 +7,23 @@ def show_traceback():
     st.error("An error occurred. See details below.")
     st.code(traceback.format_exc())
 
-
 # load packages
 from ui.web_page import create_page, launch_page
 from data.wrangle_data import combine_data
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
+import inspect
+
+
 
 def main():
     # create the page first, so you can start caching functions
     create_page()
+
+    st.write("RATINGS MODULE:", ratings)
+    st.write("RATINGS FILE:", inspect.getfile(ratings))
+
 
     # exception handling is added for days when there are no NBA games
     try:
