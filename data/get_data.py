@@ -6,6 +6,7 @@ from nba_api.live.nba.endpoints import scoreboard, odds, boxscore
 from nba_api.stats.endpoints import scoreboardv3, leaguegamefinder, leaguedashteamstats, synergyplaytypes, leaguedashptstats, leaguedashplayerstats, leaguedashteamshotlocations
 from util.helper import get_team_abbreviations, format_time, lower_all, get_team_abbreviations2, define_star, APIFailure
 import time
+import pytz
 
 ########## live data ##########
 # these first four functions have five-minute caches and the cache is cleared by the refresh button
@@ -166,20 +167,34 @@ def get_logos(today_dt):
 def get_rest(today_dt):
     # games
     try:
-        games_df = leaguegamefinder.LeagueGameFinder(season_nullable='2025-26', season_type_nullable='Regular Season',league_id_nullable='00').get_data_frames()[0]
+        games_df = leaguegamefinder.LeagueGameFinder(
+            season_nullable='2025-26',
+            season_type_nullable='Regular Season',
+            league_id_nullable='00'
+        ).get_data_frames()[0]
     except Exception:
         raise APIFailure("Rest API failed")
+
     games_df.columns = lower_all(games_df)
-    games_df['game_date'] =  pd.to_datetime(games_df['game_date'])
-    today_norm = pd.Timestamp('today').normalize()
-    
+
+    # convert game_date to timezone-aware Eastern Time
+    eastern = pytz.timezone("America/New_York")
+    games_df['game_date'] = (
+        pd.to_datetime(games_df['game_date'])
+        .dt.tz_localize(eastern) 
+    )
+
+    # timezone-aware today
+    today_norm = pd.Timestamp.now(tz=eastern).normalize()
+
     # prior games
     prior_games = games_df[games_df['game_date'] < today_norm]
     latest_games = prior_games.groupby('team_abbreviation')['game_date'].max().reset_index()
-    
+
     # days between
     latest_games['rest'] = (today_norm - latest_games['game_date']).dt.days - 1
     return latest_games
+
 
 # get vorp to calculate value of injured players
 @st.cache_data()
