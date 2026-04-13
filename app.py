@@ -1,4 +1,13 @@
 
+# enable traceback
+import sys
+import traceback
+
+def show_traceback():
+    st.error("An error occurred. See details below.")
+    st.code(traceback.format_exc())
+
+
 # load packages
 from ui.web_page import create_page, launch_page
 from data.wrangle_data import combine_data
@@ -36,6 +45,10 @@ def main():
         st.caption(f"Technical detail: {e}")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        show_traceback()
+
 
 
