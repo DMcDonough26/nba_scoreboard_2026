@@ -82,7 +82,7 @@ def game_flow(x):
 
 # get team strength
 def team_strength(x):
-    return (x['away_w82'] + x['home_w82'])/2
+    return (x['w82_away3'] + x['w82_home3'])/2
 
 # ratings
 def get_ratings(x, var_means, var_stds):

@@ -24,16 +24,14 @@ def get_scoreboard():
 
     # define columns to keep
     sb_keep_col = ['gameId', 'gameStatus', 'gameStatusText', 'gameEt',
-       'homeTeam.teamId', 'homeTeam.teamTricode', 'homeTeam.teamName', 'homeTeam.wins', 'homeTeam.losses',
+       'homeTeam.teamId', 'homeTeam.teamTricode', 'homeTeam.teamName',
        'homeTeam.score', 'homeTeam.inBonus', 'homeTeam.timeoutsRemaining',
-       'awayTeam.teamId','awayTeam.teamTricode', 'awayTeam.teamName', 'awayTeam.wins', 'awayTeam.losses',
+       'awayTeam.teamId','awayTeam.teamTricode', 'awayTeam.teamName',
        'awayTeam.score', 'awayTeam.inBonus','awayTeam.timeoutsRemaining']
     scoreboard_raw_df =  api_output[sb_keep_col].copy()
 
     # calculate fields
     scoreboard_raw_df['diff'] = (scoreboard_raw_df['homeTeam.score'] - scoreboard_raw_df['awayTeam.score']).abs()
-    scoreboard_raw_df['away_w82'] = (scoreboard_raw_df['awayTeam.wins']/(scoreboard_raw_df['awayTeam.wins']+scoreboard_raw_df['awayTeam.losses'])*82).round().astype(int)
-    scoreboard_raw_df['home_w82'] = (scoreboard_raw_df['homeTeam.wins']/(scoreboard_raw_df['homeTeam.wins']+scoreboard_raw_df['homeTeam.losses'])*82).round().astype(int)
     scoreboard_raw_df['game_name'] = scoreboard_raw_df['awayTeam.teamName'].str.cat(scoreboard_raw_df['homeTeam.teamName'], sep = ' vs. ')
     scoreboard_raw_df['team_combo'] = scoreboard_raw_df['homeTeam.teamId'].astype(str) + scoreboard_raw_df['awayTeam.teamId'].astype(str)
     scoreboard_raw_df['tipoff'] = scoreboard_raw_df['gameEt'].apply(format_time)
@@ -274,6 +272,7 @@ def get_team_adv(today_dt):
     except Exception:
         raise APIFailure("Advanced API failed")    
     adv_df.columns = lower_all(adv_df)
+    adv_df['w82'] = (adv_df['w'] / adv_df['gp'] * 82).round().astype(int)
     return adv_df
 
 # four factor team stats

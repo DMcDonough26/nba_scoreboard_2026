@@ -32,7 +32,7 @@ def create_page():
     # create refresh button
     if st.button("Refresh"):
         if (now - st.session_state.last_refresh) < COOLDOWN:
-            st.warning("\*In my most Johnny Tran voice* Too soon, Junior 🙅‍♂️. Please allow ~30 seconds in between refreshes.")
+            st.warning("*In my most Johnny Tran voice* Too soon, Junior 🙅‍♂️. Please allow ~30 seconds in between refreshes.")
         
         # clear cache on the live data elements (time stamp, scoreboard, injuries, live box score, odds)
         else:
