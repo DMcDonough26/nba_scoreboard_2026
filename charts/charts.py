@@ -2,7 +2,7 @@
 # load packages
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
 # this script holds the code for the charts in the what-to-watch section

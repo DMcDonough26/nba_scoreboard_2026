@@ -167,7 +167,7 @@ def get_rest(today_dt):
     try:
         games_df = leaguegamefinder.LeagueGameFinder(
             season_nullable='2025-26',
-            season_type_nullable='Regular Season',
+            # season_type_nullable='Regular Season', # remove this filter to update for post season
             league_id_nullable='00'
         ).get_data_frames()[0]
     except Exception:
