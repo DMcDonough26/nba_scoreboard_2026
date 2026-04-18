@@ -21,6 +21,27 @@ def create_page():
     st.title("NBA Scoreboard:"+" "+today.strftime("%m/%d/%Y"))
     st.write("Scores as of: ", today.strftime('%#I:%M:%p'), " ET")
 
+
+    with st.expander("ℹ️ How This Dashboard Works", expanded=False):
+        st.markdown("""
+        **🔄 Auto‑Refresh:**  
+        Live data updates automatically every **5 minutes** during active games.
+
+        **🔁 Manual Refresh:**  
+        Use the **Refresh** button to pull the latest scoreboard, injuries, odds, and live box scores.  
+        Refreshes are limited to **once every 30 seconds** to avoid API throttling.
+
+        **⭐ Game Ratings:**  
+        Each matchup receives a **0–10 score** based on four categories:  
+        **Game State, Matchup Quality, Narrative Context, and Style of Play.**
+
+        - Use the **sliders** to set how important each category is.  
+        - Use the **High / Medium / Low / None** controls to fine‑tune the variables inside each category.  
+        - Your selections are converted into percentages and combined with normalized stats to produce the final rating.
+
+        Adjust anything — the ratings update instantly.
+        """)
+
     # set guardrail to avoid users spamming refresh button
     eastern = pytz.timezone("America/New_York")
     now = datetime.now(eastern)
