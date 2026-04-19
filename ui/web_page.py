@@ -185,7 +185,7 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
 
     upcoming_styled = (
         upcoming_df.style
-            .format({"Game Rating": "{:.1f}","Spread": "{:.1f}"})
+            .format({"Game Rating": "{:.1f}","Point Spread": "{:.1f}"})
             .background_gradient(cmap=cmap, subset=["Game Rating"],vmin=0,vmax=10)
     )
 
@@ -194,6 +194,12 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
             .format({"Game Rating": "{:.1f}"})
             .background_gradient(cmap=cmap, subset=["Game Rating"],vmin=0,vmax=10)
     )
+
+    st.caption('''This table shows all games on today's schedule, separated by game status.
+    "Win pace" extrapolates current win percentage over a full 82‑game season.
+    Injuries are only for players confirmed out (doubtful/questionable injury status is not included).
+    Point spreads are from the perspective of the home team.
+    ''')
 
     # Create the tabs for the scoreboards
     tab1, tab2, tab3 = st.tabs(['Live Games', 'Upcoming', 'Finished Games'])
@@ -261,21 +267,26 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
     tab4, tab5, tab6, tab7 = st.tabs(['Four Factors', 'Style', 'Play Types', 'Shot Chart'])    
 
     with tab4:
+        st.caption("This lollipop chart shows where each team ranks on each of the four factors compared to the rest of the league.")
         ff_chart_df = ff_df[(ff_df['game_name']==selected_game)&(ff_df['offense']==team_dict[selected_side])]
         fig = lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side)
         st.plotly_chart(fig, use_container_width=True)
 
     with tab5:
+        st.caption("This scatter plot shows how the selected team's offense compares to the rest of the league. The tooltip shows the team name and rank for each data point.")
         fig = style_scatter_plotly(style_df, selected_side, team_dict[selected_side], name_dict)
         st.plotly_chart(fig, use_container_width=True)
         
 
     with tab6:
+        st.caption("This scatter plot shows both the frequency and efficiency of each play type relative to league average. You can highlight a section of the chart to zoom.")
         pt_chart_df = pt_df[pt_df['team_id']==team_dict[st.session_state.selected_side]].reset_index(drop=True)
         fig = pt_scatter_plotly(pt_chart_df)
         st.plotly_chart(fig, use_container_width=True)
 
     with tab7:
+
+        st.caption("The chart on the left shows frequency and the chart on the right shows efficiency. On offense, 1st = the highest frequency/efficiency. On Defense, 1st = the lowest frequency/efficiency.")
 
         col1, col2 = st.columns(2)
 

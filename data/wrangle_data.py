@@ -178,19 +178,19 @@ def combine_data():
                             'w82_away3','w82_home3','injuries_away','injuries_home']].copy().sort_values(by='game_rating',ascending=False)
 
     live_df.columns = ['Away','Home','Game Rating','Rivalry','Game Clock','Away ','Home ','Network',\
-                        'Away W82','Home W82','Injuries Away','Injuries Home']
+                        'Away Win Pace','Home Win Pace','Injuries Away','Injuries Home']
 
     upcoming_df = upcoming_raw_df[['tipoff','broadcastDisplay','away_logo','home_logo','game_rating','riv_disp','spread',\
                             'w82_away3','w82_home3','injuries_away','injuries_home']].copy().sort_values(by='game_rating',ascending=False)
 
-    upcoming_df.columns = ['Tipoff (ET)','Network','Away','Home','Game Rating','Rivarly','Spread','Away W82', 'Home W82',\
+    upcoming_df.columns = ['Tipoff (ET)','Network','Away','Home','Game Rating','Rivarly','Point Spread','Away Win Pace','Home Win Pace',\
                             'Injuries Away','Injuries Home']
 
     finished_df = finished_raw_df[['away_logo','home_logo','game_rating','riv_disp','awayTeam.score','homeTeam.score','broadcastDisplay',\
                             'w82_away3','w82_home3','injuries_away','injuries_home']].copy().sort_values(by='game_rating',ascending=False)
 
     finished_df.columns = ['Away','Home','Game Rating','Rivalry','Away ','Home ','Network',\
-                        'Away W82','Home W82','Injuries Away','Injuries Home']
+                        'Away Win Pace','Home Win Pace','Injuries Away','Injuries Home']
 
     # return today, live_df, upcoming_df, finished_df, scoreboard_raw_df,\
     #        ff_df, style_df, pt_df, shot_freq_df_long, shot_pct_df_long, opp_freq_df_long, opp_pct_df_long, name_dict
