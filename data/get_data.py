@@ -151,7 +151,7 @@ def get_logos(today_dt):
     'ORL':'https://content.sportslogos.net/logos/6/217/full/orlando_magic_logo_primary_20117178.png',
     'PHI':'https://content.sportslogos.net/logos/6/218/full/fge4lf9ridpgum631fb0gg9tt.gif',
     'PHX':'https://content.sportslogos.net/logos/6/238/full/phoenix_suns_logo_primary_19931753.png',
-    'POR':'https://content.sportslogos.net/logos/6/239/full/portland_trail_blazers_logo_primary_19918704.png',
+    'POR': 'https://content.sportslogos.net/logos/6/239/full/61thu01puuyq0kkhk9vdnsgcl.gif', #'https://content.sportslogos.net/logos/6/239/full/portland_trail_blazers_logo_primary_19918704.png',
     'SAC':'https://content.sportslogos.net/logos/6/240/full/832.png',
     'SAS':'https://content.sportslogos.net/logos/6/233/full/e04ylwkfdofkr2ctlerjov26s.png',
     'TOR':'https://content.sportslogos.net/logos/6/227/full/toronto_raptors_logo_primary_19961665.png',
