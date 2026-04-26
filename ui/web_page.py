@@ -40,6 +40,9 @@ def create_page():
         - Your selections are converted into percentages and combined with normalized stats to produce the final rating.
 
         Adjust anything — the ratings update instantly.
+
+        **🔍 Learn more:**  
+        Read the full architecture deep dive [on GitHub.](https://dmcdonough26.github.io/nba-scoreboard/)
         """)
 
     # set guardrail to avoid users spamming refresh button
