@@ -198,11 +198,7 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
             .background_gradient(cmap=cmap, subset=["Game Rating"],vmin=0,vmax=10)
     )
 
-    st.caption('''This table shows all games on today's schedule, separated by game status.
-    "Win pace" extrapolates current win percentage over a full 82‑game season.
-    Injuries are only for players confirmed out (doubtful/questionable injury status is not included).
-    Point spreads are from the perspective of the home team.
-    ''')
+    st.caption('''The table below shows all games on today's schedule, separated by game status.  \n"Win pace" shows how many games each team is on-pace to win in an 82‑game season.  \nInjuries are only shown for players that are confirmed out (players listed as doubtful/questionable are not included below).  \nPoint spreads are from the perspective of the home team.''')
 
     # Create the tabs for the scoreboards
     tab1, tab2, tab3 = st.tabs(['Live Games', 'Upcoming', 'Finished Games'])
@@ -270,26 +266,32 @@ def launch_page(today, live_df, upcoming_df, finished_df, scoreboard_raw_df,
     tab4, tab5, tab6, tab7 = st.tabs(['Four Factors', 'Style', 'Play Types', 'Shot Chart'])    
 
     with tab4:
-        st.caption("This lollipop chart shows where each team ranks on each of the four factors compared to the rest of the league.")
+        st.caption("The lollipop chart below shows where each team ranks on each of the four factors compared to the rest of the league.  \nOrange points compare the selected team's offense against the other 29 offenses. Gray points compare the opponent's defense against the other 29 defenses.  \nFor both offense and defense, 1st is best and 30th is worst.")
         ff_chart_df = ff_df[(ff_df['game_name']==selected_game)&(ff_df['offense']==team_dict[selected_side])]
         fig = lollipop_chart_plotly(ff_chart_df, matchup_dict, selected_side)
         st.plotly_chart(fig, use_container_width=True)
+        with st.expander("📘 Glossary", expanded=False):
+            st.caption("Each metric is defined for the offense/defense respectively.  \nOffensive Rating: The number of points scored/allowed per 100 possessions.  \nEffective Field Goal %: Field goal percentage shot/allowed having converted three pointers onto the same scale as two-point shots.  \nTurnover %: The percentage of possessions that resulted in a turnover committed/forced.  \nOffensive Rebounding %: The percentage of rebounds that were grabbed by/given up to the offensive team.  \nFree Throw Rate: This dashboard uses the NBA's defintion, which is free throw attempts ÷ field goal attempts (Dean Oliver's original formula used free throws made ÷ field goal attempts).")
 
     with tab5:
-        st.caption("This scatter plot shows how the selected team's offense compares to the rest of the league. The tooltip shows the team name and rank for each data point.")
+        st.caption("The scatter plot below shows how the selected team's offense compares to the rest of the league. The tooltip shows the team name and rank for each data point. All six categories are standardized to be put on the same scale.")
         fig = style_scatter_plotly(style_df, selected_side, team_dict[selected_side], name_dict)
         st.plotly_chart(fig, use_container_width=True)
+        with st.expander("📘 Glossary", expanded=False):
+            st.caption("Pace: The number of possessions per game.  \nPlayer Movement: The total distance ran ÷ the number of posessions.  \nBall Movement: The total number of passes made ÷ the number of possessions.  \nField Goal Concentration: The percentage of the team's field goal attempts taken by the player with the most field goal attempts (1st is the team with the heaviest concentration).  \nAssist Percent: The percentage of the team's made field goals that were assisted.  \nPlay Diversity: The sum of the squared differences of a team’s frequency of running each play type vs. the league average frequency for that play type.")
         
 
     with tab6:
-        st.caption("This scatter plot shows both the frequency and efficiency of each play type relative to league average. You can highlight a section of the chart to zoom.")
+        st.caption("The scatter plot below shows both the frequency and efficiency of each play type relative to league average. You can highlight a section of the chart to zoom.")
         pt_chart_df = pt_df[pt_df['team_id']==team_dict[st.session_state.selected_side]].reset_index(drop=True)
         fig = pt_scatter_plotly(pt_chart_df)
         st.plotly_chart(fig, use_container_width=True)
+        with st.expander("📘 Glossary", expanded=False):
+            st.caption("The play type data from the NBA API works backwards to say where shots came from, as opposed to working forwards to say what actions a team typically runs (which would be preferred).  \nPutbacks and Miscellaneous were ommited because they do not help answer the question of what the team is trying to run.  \nPick and Roll Ballhandler and Pick and Roll Screener were combined to generally describe the action of Pick and Roll.  \nRelative Frequency: The selected team's percentage of plays from that play type ÷ the league average frequency.  \nRelative Efficiency: The selected team's points per possession from that play type ÷ the league average efficiency.")
 
     with tab7:
 
-        st.caption("The chart on the left shows frequency and the chart on the right shows efficiency. On offense, 1st = the highest frequency/efficiency. On Defense, 1st = the lowest frequency/efficiency.")
+        st.caption("The bar charts below show data by shot location.  \nThe chart on the left shows where each team ranks in frequency and the chart on the right shows where they rank on efficiency.  \nOn offense, 1st means the selected team has the highest frequency/efficiency from that location.  \nOn Defense, 1st means the opponent allows the lowest frequency/efficiency from that location.")
 
         col1, col2 = st.columns(2)
 
