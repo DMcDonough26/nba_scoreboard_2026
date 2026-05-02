@@ -18,30 +18,37 @@ def main():
     # create the page first, so you can start caching functions
     create_page()
 
-    # exception handling is added for days when there are no NBA games
-    try:
-        # fetch all of the data needed for the app
-        data = combine_data()
+    # exception handling for failed starts, which happen occasionally on the cloud
+    MAX_RETRIES = 2
+    for attempt in range(MAX_RETRIES):
+        try:
+            # fetch all of the data needed for the app
+            data = combine_data()
+            break
+        
+        # if an issue exists (beyond no games that day) provide feedback to the user
+        except Exception as e:
+            if attempt == MAX_RETRIES - 1:
+                st.error("The app is temporarily unavailable due to missing data.")
+                st.caption(f"Technical detail: {e}")
+                return
+            time.sleep(2)  # brief pause before retry
 
-        # if no games today, provide a message
-        if data.get("no_games"):
-            st.info("There are no NBA games scheduled today.")
-            return
+    # share a message if there are no NBA games
+    if data.get("no_games"):
+        st.info("There are no NBA games scheduled today.")
+        return
 
-        # while games are live, auto refresh the dashboard every five minutes
-        if not data['live_df'].empty:
-            st_autorefresh(interval=300000, key="live_refresh")
+    # while games are live, auto refresh the dashboard every five minutes
+    if not data['live_df'].empty:
+        st_autorefresh(interval=300000, key="live_refresh")
 
-        # remove the no games flag before passing to launch page
-        data.pop("no_games", None) 
+    # remove the no games flag before passing to launch page
+    data.pop("no_games", None)
 
-        # render the rest of the page
-        launch_page(**data)
+    # render the rest of the page
+    launch_page(**data)
 
-    # if an issue exists (beyond no games that day) provide feedback to the user
-    except Exception as e:
-        st.error("The app is temporarily unavailable due to missing data.")
-        st.caption(f"Technical detail: {e}")
 
 if __name__ == "__main__":
     try:
