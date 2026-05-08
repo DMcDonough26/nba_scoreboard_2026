@@ -2,6 +2,7 @@
 # enable traceback
 import sys
 import traceback
+import time
 
 def show_traceback():
     st.error("An error occurred. See details below.")
