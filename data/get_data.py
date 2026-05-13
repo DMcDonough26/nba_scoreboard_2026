@@ -16,7 +16,7 @@ import pytz
 def get_scoreboard():
     # make API call
     try:
-        api_output = pd.json_normalize(scoreboard.ScoreBoard().get_dict()['scoreboard']['games'])
+        api_output = pd.json_normalize(scoreboard.ScoreBoard(headers={"Referer": "https://www.nba.com/"}).get_dict()['scoreboard']['games'])
     except Exception:
         raise APIFailure("Live Scoreboard API failed") 
     if api_output.empty:
@@ -54,7 +54,7 @@ def get_live_box_score(x):
             # get fields for game flow variable
             game_id_list.append(game_id)
             try:
-                game_box = boxscore_obj = boxscore.BoxScore(game_id)
+                game_box = boxscore_obj = boxscore.BoxScore(game_id, headers={"Referer": "https://www.nba.com/"})
             except Exception:
                 raise APIFailure("Live Box Score API failed")
             biggest_lead_list.append(max(game_box.get_dict()['game']['homeTeam']['statistics']['biggestLead'],
@@ -89,7 +89,7 @@ def get_injuries():
 @st.cache_data(ttl=300)
 def get_spreads():
     try:
-        odds_df = pd.json_normalize(odds.Odds().get_dict()['games'])
+        odds_df = pd.json_normalize(odds.Odds(headers={"Referer": "https://www.nba.com/"}).get_dict()['games'])
     except Exception:
         raise APIFailure("Odds API failed")
     return odds_df
