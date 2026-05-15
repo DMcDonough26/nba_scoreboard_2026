@@ -128,7 +128,7 @@ def create_page():
             var3 = st.segmented_control(label = "Game Flow", options = ['High','Medium','Low','None'], key='var3', default='None')
 
     with col6:
-        with st.expander("Expected Quality Variables:",expanded=False):
+        with st.expander("Matchup Quality Variables:",expanded=False):
             var4 = st.segmented_control(label = "Team Strength", options = ['High','Medium','Low','None'], key='var4', default='High')
             var5 = st.segmented_control(label = "Player Availability", options = ['High','Medium','Low','None'], key='var5', default='High')
             var6 = st.segmented_control(label = "Rest", options = ['High','Medium','Low','None'], key='var6', default='Low')
@@ -136,7 +136,7 @@ def create_page():
             var8 = st.segmented_control(label = "Defensive Rating", options = ['High','Medium','Low','None'], key='var8', default='None')
     
     with col7:
-        with st.expander("Matchup Variables:",expanded=False):
+        with st.expander("Narrative Context Variables:",expanded=False):
             val9 = st.segmented_control(label = "Rivalry", options = ['High','Medium','Low','None'], key='var9', default='Medium')
             var10 = st.segmented_control(label = "Style Contrasts", options = ['High','Medium','Low','None'], key='var10', default='Medium')
             var11 = st.segmented_control(label = "Star Power", options = ['High','Medium','Low','None'], key='var11', default='None')    
