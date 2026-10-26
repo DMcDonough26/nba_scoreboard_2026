@@ -16,14 +16,15 @@ import pytz
 def get_scoreboard():
     # make API call
     try:
-        api_output = pd.json_normalize(scoreboard.ScoreBoard(headers={"Referer": "https://www.nba.com/"}).get_dict()['scoreboard']['games'])
+        # api_output = pd.json_normalize(scoreboard.ScoreBoard(headers={"Referer": "https://www.nba.com/"}).get_dict()['scoreboard']['games'])
+        api_output = pd.json_normalize(scoreboard.ScoreBoard().get_dict()['scoreboard']['games'])
     except Exception:
         raise APIFailure("Live Scoreboard API failed") 
     if api_output.empty:
         return None
 
     # define columns to keep
-    sb_keep_col = ['gameId', 'gameStatus', 'gameStatusText', 'gameEt',
+    sb_keep_col = ['gameId', 'gameStatus', 'gameStatusText', 'period','gameClock','gameEt',
        'homeTeam.teamId', 'homeTeam.teamTricode', 'homeTeam.teamName',
        'homeTeam.score', 'homeTeam.inBonus', 'homeTeam.timeoutsRemaining',
        'awayTeam.teamId','awayTeam.teamTricode', 'awayTeam.teamName',
@@ -54,7 +55,8 @@ def get_live_box_score(x):
             # get fields for game flow variable
             game_id_list.append(game_id)
             try:
-                game_box = boxscore_obj = boxscore.BoxScore(game_id, headers={"Referer": "https://www.nba.com/"})
+                # game_box = boxscore_obj = boxscore.BoxScore(game_id, headers={"Referer": "https://www.nba.com/"})
+                game_box = boxscore_obj = boxscore.BoxScore(game_id)
             except Exception:
                 raise APIFailure("Live Box Score API failed")
             biggest_lead_list.append(max(game_box.get_dict()['game']['homeTeam']['statistics']['biggestLead'],
@@ -89,7 +91,8 @@ def get_injuries():
 @st.cache_data(ttl=300)
 def get_spreads():
     try:
-        odds_df = pd.json_normalize(odds.Odds(headers={"Referer": "https://www.nba.com/"}).get_dict()['games'])
+        # odds_df = pd.json_normalize(odds.Odds(headers={"Referer": "https://www.nba.com/"}).get_dict()['games'])
+        odds_df = pd.json_normalize(odds.Odds().get_dict()['games'])
     except Exception:
         raise APIFailure("Odds API failed")
     return odds_df
@@ -166,7 +169,7 @@ def get_rest(today_dt):
     # games
     try:
         games_df = leaguegamefinder.LeagueGameFinder(
-            season_nullable='2025-26',
+            season_nullable='2026-27',
             # season_type_nullable='Regular Season', # remove this filter to update for post season
             league_id_nullable='00'
         ).get_data_frames()[0]
@@ -220,31 +223,31 @@ def get_stars(today_dt):
     team_abbreviations2 = get_team_abbreviations2()
 
     # get last three years of data
-    df23 = get_award_data(2023, today_dt)
-    df24 = get_award_data(2024, today_dt)
-    df25 = get_award_data(2025, today_dt)
-    combined_df = pd.concat([df23,df24,df25],axis=0)
+    dfpy3 = get_award_data(2024, today_dt)
+    dfpy2 = get_award_data(2025, today_dt)
+    dfpy1 = get_award_data(2026, today_dt)
+    combined_df = pd.concat([dfpy3,dfpy2,dfpy1],axis=0)
 
     # make a unique list of stars
     star_set = set(combined_df[combined_df['star_ind']==1]['Player'])
 
-    # get 26 players
-    df26 = get_award_data(2026, today_dt, current=True)
+    # get current year players
+    dfcy = get_award_data(2027, today_dt, current=True)
 
     # bring in team tri code
-    df26['teamtricode'] = df26['Team'].apply(lambda x: team_abbreviations2[x])
+    dfcy['teamtricode'] = dfcy['Team'].apply(lambda x: team_abbreviations2[x])
 
     # join in the awards
-    df26['star_ind'] = df26['Player'].apply(lambda x: 1 if x in star_set else 0)
+    dfcy['star_ind'] = dfcy['Player'].apply(lambda x: 1 if x in star_set else 0)
 
     # remove anyone who is injured
     injury_df = pd.read_html("https://www.basketball-reference.com/friv/injuries.fcgi")[0]
     injury_df['design'] = injury_df['Description'].apply(lambda x: x.split(' (')[0])
     injury_df = injury_df[(injury_df['design'] == 'Out')|(injury_df['design'] == 'Out For Season')]
-    df26_non_injured = df26[~df26["Player"].isin(injury_df["Player"])]
+    dfcy_non_injured = dfcy[~dfcy["Player"].isin(injury_df["Player"])]
 
     # aggregate to the tri code
-    return df26_non_injured.groupby('teamtricode')['star_ind'].sum().reset_index()
+    return dfcy_non_injured.groupby('teamtricode')['star_ind'].sum().reset_index()
 
 # get foul data
 @st.cache_data()

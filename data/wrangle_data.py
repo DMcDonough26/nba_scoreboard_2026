@@ -1,7 +1,7 @@
 
 # load packages
 import streamlit as st
-from util.helper import get_today, get_contrast, url_to_data_url
+from util.helper import get_today, get_contrast, url_to_data_url, format_game_clock
 from data.get_data import get_scoreboard, get_rivalries, get_lp_rankings, get_network, get_logos, get_spreads, get_rest, get_injuries,\
                           get_live_box_score, get_vorp, get_team_adv, get_ff_chart_data, get_stars, get_fouls, get_style_chart_data,\
                           get_team_play_type, get_shot_data, get_team_four, get_team_pt_dist, get_team_pt_pass, get_team_fg_con_df
@@ -39,7 +39,7 @@ def combine_data():
     logo_links = get_logos(today_dt)
     latest_games = get_rest(today_dt)
     time.sleep(2)
-    vorp_df_25 = get_vorp(2025, today_dt)
+    vorp_df_py = get_vorp(2026, today_dt)
     adv_df = get_team_adv(today_dt)
     time.sleep(2)
     four_df = get_team_four(today_dt)
@@ -104,7 +104,7 @@ def combine_data():
     scoreboard_raw_df = scoreboard_raw_df.merge(live_box_df,how='left',on='gameId')
 
     # merge injury and vorp
-    injured_vorp_full_df = injury_full_df.merge(vorp_df_25[['Player','VORP']],how='left',on='Player')
+    injured_vorp_full_df = injury_full_df.merge(vorp_df_py[['Player','VORP']],how='left',on='Player')
     injured_vorp_team_df = injured_vorp_full_df[['teamtricode','Player','VORP']].dropna().groupby('teamtricode')['VORP'].sum().reset_index()
     injured_vorp_team_df.columns = ['teamtricode','injured_vorp']
     scoreboard_raw_df = scoreboard_raw_df.merge(injured_vorp_team_df[['teamtricode','injured_vorp']],how='left',left_on='homeTeam.teamTricode',right_on='teamtricode')
@@ -168,13 +168,16 @@ def combine_data():
     scoreboard_raw_df['min_rest'] = scoreboard_raw_df[['rest_away','rest_home']].min(axis=1)
     scoreboard_raw_df["riv_disp"] = np.where(scoreboard_raw_df['rivalry'] == 1, "🔥", "")
 
+    # new code with change in API response for gamestatustext
+    scoreboard_raw_df['formatted_clock'] = scoreboard_raw_df.apply(format_game_clock, axis=1)
+
     # split into sections
     upcoming_raw_df = scoreboard_raw_df[scoreboard_raw_df['gameStatus']==1].copy()
     live_raw_df = scoreboard_raw_df[scoreboard_raw_df['gameStatus']==2].copy()
     finished_raw_df = scoreboard_raw_df[scoreboard_raw_df['gameStatus']==3].copy()
 
     # create final dataframes (select and rename relevant columns)
-    live_df = live_raw_df[['away_logo','home_logo','game_rating','riv_disp','gameStatusText','awayTeam.score','homeTeam.score','broadcastDisplay',\
+    live_df = live_raw_df[['away_logo','home_logo','game_rating','riv_disp','formatted_clock','awayTeam.score','homeTeam.score','broadcastDisplay',\
                             'w82_away3','w82_home3','injuries_away','injuries_home']].copy().sort_values(by='game_rating',ascending=False)
 
     live_df.columns = ['Away','Home','Game Rating','Rivalry','Game Clock','Away ','Home ','Network',\

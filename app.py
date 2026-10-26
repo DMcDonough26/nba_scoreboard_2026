@@ -29,6 +29,7 @@ def main():
         
         # if an issue exists (beyond no games that day) provide feedback to the user
         except Exception as e:
+            traceback.print_exc()  # full traceback goes to the terminal
             if attempt == MAX_RETRIES - 1:
                 st.error("The app is temporarily unavailable due to missing data.")
                 st.caption(f"Technical detail: {e}")

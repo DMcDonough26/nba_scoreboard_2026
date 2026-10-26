@@ -1,6 +1,7 @@
 
 import pandas as pd
 import streamlit as st
+import re
 
 
 # get point diff
@@ -16,42 +17,83 @@ def point_diff(x):
         return x['diff']
 
 # get time remaining
+
+# original code to be deleted (older version of API response with gamestatustext)
+# def time_remaining(x):
+    
+#     # upcoming games
+#     if x['gameStatus']==1:
+#         return 48*60
+    
+#     # live games
+#     # some exception handling for game breaks
+#     if x['gameStatus']==2:
+#         if x['gameStatusText'] == 'Half':
+#             return 24*60
+#         else:
+#             if x['gameStatusText'].split(' ')[0] == 'END':
+#                 qtr = int(x['gameStatusText'].split(' ')[1][1])
+#                 qtr_val = (4-qtr)*12*60
+#                 min_val = 0
+#                 sec_val = 0
+#             elif x['gameStatusText'].split(' ')[0][0:2] == 'OT':
+#                 qtr_val = 0
+#                 min_val = 0
+#                 sec_val = 0
+#             else:
+#                 qtr = int(x['gameStatusText'].split(' ')[0][1])
+#                 time = x['gameStatusText'].split(' ')[1]
+#                 qtr_val = (4-qtr)*12*60
+#                 if time.split(":")[0] == '':
+#                     min_val = 0
+#                 else:
+#                     min_val = int(time.split(":")[0])*60
+#                 sec_val = round(float(time.split(":")[1]))
+#             return qtr_val + min_val + sec_val
+#     # finished games
+#     if x['gameStatus']==3:
+#         return 0
+#     else:
+#         pass
+
+
+# new code to handle new version of API
 def time_remaining(x):
-    
+    """Seconds of regulation time left in a game (48*60 = not started, 0 = over)."""
+
     # upcoming games
-    if x['gameStatus']==1:
-        return 48*60
-    
+    if x['gameStatus'] == 1:
+        return 48 * 60
+
     # live games
-    # some exception handling for game breaks
-    if x['gameStatus']==2:
-        if x['gameStatusText'] == 'Half':
-            return 24*60
-        else:
-            if x['gameStatusText'].split(' ')[0] == 'END':
-                qtr = int(x['gameStatusText'].split(' ')[1][1])
-                qtr_val = (4-qtr)*12*60
-                min_val = 0
-                sec_val = 0
-            elif x['gameStatusText'].split(' ')[0][0:2] == 'OT':
-                qtr_val = 0
-                min_val = 0
-                sec_val = 0
-            else:
-                qtr = int(x['gameStatusText'].split(' ')[0][1])
-                time = x['gameStatusText'].split(' ')[1]
-                qtr_val = (4-qtr)*12*60
-                if time.split(":")[0] == '':
-                    min_val = 0
-                else:
-                    min_val = int(time.split(":")[0])*60
-                sec_val = round(float(time.split(":")[1]))
-            return qtr_val + min_val + sec_val
+    if x['gameStatus'] == 2:
+        status_text = str(x['gameStatusText']).strip().upper()
+        period = int(x['period'])
+
+        # overtime: no regulation time left
+        if period > 4 or status_text.startswith('OT'):
+            return 0
+
+        # time left after the current period ends (halftime = period 2, clock zero)
+        remaining = (4 - period) * 12 * 60
+
+        # add what's left on the clock in the current period
+        clock = x['gameClock']
+        if isinstance(clock, str) and clock.strip():
+            m = re.fullmatch(r'PT(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?', clock.strip())
+            if m:
+                minutes = int(m.group(1)) if m.group(1) else 0
+                seconds = float(m.group(2)) if m.group(2) else 0.0
+                remaining += minutes * 60 + int(round(seconds))
+
+        return remaining
+
     # finished games
-    if x['gameStatus']==3:
+    if x['gameStatus'] == 3:
         return 0
-    else:
-        pass
+
+    return None
+
 
 # get game flow
 # this is a hierarchy of ratings based on how back-and-forth the game was, if there was a come back, or generally how close it was

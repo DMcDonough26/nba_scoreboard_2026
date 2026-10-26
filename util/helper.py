@@ -6,7 +6,7 @@ import pandas as pd
 import base64
 import requests
 import pytz
-
+import re
 
 # get today
 @st.cache_data(ttl=300)
@@ -124,3 +124,54 @@ def url_to_data_url(url: str) -> str:
 
 class APIFailure(Exception):
     pass
+
+
+# additional code to handle change in gamestatustext from API
+def _clock_to_seconds(clock):
+    """Convert an ISO-style clock like 'PT08M30.00S' to whole seconds (None if unparseable)."""
+    if not isinstance(clock, str) or not clock.strip():
+        return None
+    m = re.fullmatch(r'PT(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?', clock.strip())
+    if not m:
+        return None
+    minutes = int(m.group(1)) if m.group(1) else 0
+    seconds = float(m.group(2)) if m.group(2) else 0.0
+    return minutes * 60 + int(round(seconds))
+
+
+def format_game_clock(x):
+    """Display string for a scoreboard row, e.g. 'Q3 8:30', 'END Q2', 'Half', 'Final'."""
+
+    status = x['gameStatus']
+    status_text = str(x['gameStatusText']).strip()
+
+    # upcoming games: the feed already gives the tip-off time (e.g. '9:00 pm ET')
+    if status == 1:
+        return status_text
+
+    # finished games
+    if status == 3:
+        return status_text or 'Final'
+
+    # live games
+    if status == 2:
+        if status_text.upper().startswith('HALF'):
+            return 'Half'
+
+        period = int(x['period'])
+        if period > 4:
+            ot = period - 4
+            label = 'OT' if ot == 1 else f'OT{ot}'
+        else:
+            label = f'Q{period}'
+
+        total = _clock_to_seconds(x['gameClock'])
+        if total is None:
+            return label
+        if total == 0:
+            return f'END {label}'
+
+        mins, secs = divmod(total, 60)
+        return f'{label} {mins}:{secs:02d}'
+
+    return status_text
